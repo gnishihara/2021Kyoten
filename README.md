@@ -8,7 +8,7 @@ R version 4.1.1 (2021-08-10)
 
 ## 必要なRパケージ
 
-`tidyverse`, `lubridate`, `statmod`, `showtext`, `ggpubr`, `lemon`, `nlstools`
+`tidyverse`, `lubridate`, `statmod`, `showtext`, `ggpubr`, `lemon`, `nlstools`, `broom`, `minpack.lm`, `nlme`
 
 ## A日程用スクリプト
 
