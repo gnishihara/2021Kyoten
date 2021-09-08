@@ -33,3 +33,7 @@ R version 4.1.1 (2021-08-10)
 **気象庁データリンク**
 
 * [data file](https://docs.google.com/spreadsheets/d/e/2PACX-1vRH8_QwdlSReHgksJaWeRgHJ6J5ELx_7zyFRN7ZVdUHl87vkbZiV9bN42Mf3do8InyTufpQAWF1rKJC/pub?output=csv)
+
+**光合成はデータリンク**
+
+* [data file](https://docs.google.com/spreadsheets/d/e/2PACX-1vThUTjrAocQvXqjtAeSeK7pWMQuRAGDSU8UpooB0Z6o51J6zvv0_Prcna0aDbJ-BfrCgpGshBhzUOKv/pub?output=csv)
