@@ -16,7 +16,8 @@ R version 4.1.1 (2021-08-10)
 * course_A_day02.R
 
 **マイクロステーションデータリンク**
-# HOBO H21-002 Microstation Data @ ECSER
+
+HOBO H21-002 Microstation Data @ ECSER
 
 * [data file 1](https://docs.google.com/spreadsheets/d/e/2PACX-1vR0FUr9fZ8SbFw3UGS6lulZqbzqW34jtlRj5VmKN8S8QcS4vjYmRafC7v6fwoNljMUlJVTlYRkbrui5/pub?output=csv)
 * [data file 2](https://docs.google.com/spreadsheets/d/e/2PACX-1vTt_rEpmL7eWJtOc5MprXeihH4LTXkE9CyoLyPext6j3_9wbYAQAXQlEiSOs_Hse0hGLH6-zb6NJVKu/pub?output=csv)
@@ -34,8 +35,7 @@ R version 4.1.1 (2021-08-10)
 
 * [data file](https://docs.google.com/spreadsheets/d/e/2PACX-1vRH8_QwdlSReHgksJaWeRgHJ6J5ELx_7zyFRN7ZVdUHl87vkbZiV9bN42Mf3do8InyTufpQAWF1rKJC/pub?output=csv)
 
-
-# Papers to read
+## Some papers for reference
 
 Wasserman RL, Lazar NA (2016) “The ASA’s Statement on p-Values: Context, Process, and Purpose,” The American Statistician, 70, 129–133, https://doi.org/10.1080/00031305.2016.1154108
 
