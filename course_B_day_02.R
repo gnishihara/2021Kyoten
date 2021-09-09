@@ -43,4 +43,81 @@ p2 = ggplot(iris2) + geom_qq(aes(sample =  qres2)) + geom_qq_line(aes(sample = q
 
 ggpubr::ggarrange(p1,p2)
 
-# 
+
+ 
+################################################################################
+################################################################################
+################################################################################
+URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRH8_QwdlSReHgksJaWeRgHJ6J5ELx_7zyFRN7ZVdUHl87vkbZiV9bN42Mf3do8InyTufpQAWF1rKJC/pub?output=csv"
+z = read_lines(URL, skip = 2, n_max = 3)
+z |> as_tibble_col() |> 
+  separate(value, into = str_glue("x{1:75}"), sep = ",") |> 
+  as.matrix() |> t()
+
+x = c("temperature", "high-temperature", "rainfall", "max-rainfall")
+y = c("nagasaki", "tokyo", "naha")
+z = str_glue("{rep(y, each = 4)}_{rep(x, 3)}")
+
+cnames = c("ym", z)
+ctypes =c("cd", rep("-", 4), "d", rep("-", 4), "d", rep("-", 6), "d", rep("-", 6),
+          "d", rep("-", 4), "d", rep("-", 4), "d", rep("-", 6), "d", rep("-", 6),
+          "d", rep("-", 4), "d", rep("-", 4), "d", rep("-", 6), "d", rep("-", 6)) |> 
+  paste(collapse = "")
+weather = read_csv(URL, col_names = cnames, col_types = ctypes, skip = 6)
+
+weather = weather |> 
+  pivot_longer(!ym, names_to = c("location", "measurement"),
+               names_pattern = "(.*)_(.*)") |> 
+  separate(ym, c("year", "month"), convert = T)
+################################################################################
+
+temperature = weather |> filter(str_detect(measurement, "^rain")) |> drop_na()
+
+m1 = glm(value ~ I(year - 1960) * location, 
+         data = temperature, family = Gamma("log"))
+summary(m1)
+
+plot(m1)
+
+temperature = temperature |> 
+  mutate(resid = qresiduals(m1, dispersion = summary(m1)$dispersion)) |>
+  mutate(lpred = predict(m1, type = "link"),
+         pred  = predict.glm(m1, type = "response")) |> print()
+
+ggplot(temperature) + geom_boxplot(aes(x = location, y = resid))
+
+ggplot(temperature) + 
+  geom_qq(aes(sample = resid, color = location)) +
+  geom_qq_line(aes(sample = resid, color = location)) +
+  facet_wrap(vars(location), ncol = 3)
+
+ggplot(temperature) + 
+  geom_point(aes(x = pred, y = resid, color = location)) +
+  geom_smooth(aes(x = pred, y = resid, color = location)) + 
+  facet_wrap(vars(location), nrow = 3)
+
+
+ggplot(temperature) + 
+  geom_point(aes(x = year, y = value, color = location)) +
+  geom_line(aes(x = year, y = pred, color = location)) +
+  facet_wrap(vars(location), nrow = 3)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

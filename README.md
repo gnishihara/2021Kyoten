@@ -8,7 +8,7 @@ R version 4.1.1 (2021-08-10)
 
 ## 必要なRパケージ
 
-`tidyverse`, `lubridate`, `statmod`, `showtext`, `ggpubr`, `lemon`, `nlstools`, `broom`, `minpack.lm`, `nlme`
+`tidyverse`, `lubridate`, `statmod`, `showtext`, `ggpubr`, `lemon`, `nlstools`, `broom`, `minpack.lm`, `nlme`, `emmeans`
 
 ## A日程用スクリプト
 
@@ -33,3 +33,10 @@ R version 4.1.1 (2021-08-10)
 **気象庁データリンク**
 
 * [data file](https://docs.google.com/spreadsheets/d/e/2PACX-1vRH8_QwdlSReHgksJaWeRgHJ6J5ELx_7zyFRN7ZVdUHl87vkbZiV9bN42Mf3do8InyTufpQAWF1rKJC/pub?output=csv)
+
+
+# Papers to read
+
+Wasserman RL, Lazar NA (2016) “The ASA’s Statement on p-Values: Context, Process, and Purpose,” The American Statistician, 70, 129–133, https://doi.org/10.1080/00031305.2016.1154108
+
+Wasserman RL, Schirm AL, Lazar, NA (2019) “Moving to a World Beyond ‘p < 0.05’,” The American Statistician, 73, 1–19, https://doi.org/10.1080/00031305.2019.1583913

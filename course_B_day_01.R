@@ -10,6 +10,7 @@ library(lubridate)
 library(showtext)
 library(ggpubr)
 library(lemon)
+library(broom)
 
 # ggplot の設定 ################################################################
 font_add_google("Noto Sans", family = "notosans")
@@ -35,12 +36,31 @@ ggplot(japan2) + geom_point(aes(x = Year, y = reported_landings/1000))
 m1 = lm(reported_landings/1000 ~ Year, data = japan2)
 summary(m1)
 
+# Extract results with tidy() ##################################################
+m1 |> tidy()
+anova(m1) |> tidy()
+
 # diagnostic plots #############################################################
+# 
 # plot.lm()
 plot(m1, which = 1)
 plot(m1, which = 2)
 plot(m1, which = 3)
 plot(m1, which = 5)
+
+# Testing for normality ########################################################
+# Shapiro-Wilks test ###########################################################
+# Null hypothesis: the sample came from a normally distributed population
+shapiro.test(japan2$reported_landings) 
+
+# Testing for homogeneity of variance ##########################################
+# Only when there are factors.
+# Bartlett's test (data must be normally distributed)
+# bartlett.test()
+# Levene's test (Less sensitive to non-normality)
+# car::leveneTest(m1)
+# Fligner-Killeen's test (non-parametric test and is robust to non-normal data)
+# fligner.test()
 
 ################################################################################
 URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRH8_QwdlSReHgksJaWeRgHJ6J5ELx_7zyFRN7ZVdUHl87vkbZiV9bN42Mf3do8InyTufpQAWF1rKJC/pub?output=csv"
@@ -65,3 +85,141 @@ weather = weather |>
                names_pattern = "(.*)_(.*)") |> 
   separate(ym, c("year", "month"), convert = T)
 ################################################################################
+
+temperature = weather |> filter(str_detect(measurement, "^temperature$")) |> drop_na()
+
+m1 = lm(value ~ year * location, data = temperature)
+summary(m1) 
+
+par(mfrow = c(2,2))
+plot(m1, which = 1)
+plot(m1, which = 2)
+plot(m1, which = 3)
+plot(m1, which = 5)
+par(mfrow = c(1,1))
+
+shapiro.test(temperature$value)
+
+temperature = temperature |> 
+  mutate(resid = residuals(m1),
+         pearson = residuals(m1,type = "pearson")) |>
+  mutate(pred = predict(m1))
+
+temperature |> 
+  group_nest(location) |> 
+  mutate(shapiro = map(data, \(x){
+    shapiro.test(x$resid)
+  })) |> 
+  mutate(tidy = map(shapiro, tidy)) |> 
+  unnest(tidy)
+
+bartlett.test(resid ~ location, data = temperature)
+fligner.test(resid ~ location, data = temperature)
+
+ggplot(temperature) + geom_boxplot(aes(x = location, y = resid))
+ggplot(temperature) + geom_boxplot(aes(x = location, y = pearson))
+
+ggplot(temperature) + 
+  geom_qq(aes(sample = resid, color = location)) +
+  geom_qq_line(aes(sample = resid, color = location)) +
+  facet_wrap(vars(location), ncol = 3)
+
+ggplot(temperature) + 
+  geom_point(aes(x = pred, y = resid, color = location)) +
+  geom_smooth(aes(x = pred, y = resid, color = location)) + 
+  facet_wrap(vars(location), nrow = 3)
+
+# Multiple comparisons #########################################################
+library(emmeans)
+
+temperature |> group_by(location) |> 
+  summarise(across(value, list(mean = mean, sd = sd)))
+
+emmeans(m1, specs = pairwise ~ location, adjust = "tukey")
+emtrends(m1, specs = pairwise ~ location, var = "year", adjust = "tukey")
+emmip(m1, ~location, CIs = TRUE)
+emmip(m1, location~year, cov.reduce = range)
+
+################################################################################
+
+
+library(nlme)
+temperature = temperature |> drop_na() |> 
+  mutate(location = factor(location))
+
+m1 = gls(value ~ year * location, data = temperature,
+         weights = varIdent(form=~1|location))
+
+summary(m1) 
+
+# Variance for each location
+sigma = summary(m1)$sigma
+
+tokyoS = intervals(m1, which = "var-cov") |> pluck("sigma") |> as_tibble_row() |> 
+  mutate(location = "tokyo")
+S = intervals(m1, which = "var-cov") |> pluck("varStruct") |> 
+  tidyr::as_tibble(rownames = "location")
+
+bind_rows(tokyoS,S) |> 
+  mutate(sigma = c(1,sigma, sigma)) |> 
+  mutate(across(c(lower, `est.`, upper),
+                ~.*sigma))
+
+plot(m1)
+
+temperature = temperature |> mutate(resid = residuals(m1)) |> 
+  mutate(pred = predict(m1))
+
+temperature |> 
+  group_nest(location) |> 
+  mutate(shapiro = map(data, \(x){
+    shapiro.test(x$resid)
+  })) |> 
+  mutate(tidy = map(shapiro, tidy)) |> 
+  unnest(tidy)
+
+bartlett.test(resid ~ location, data = temperature)
+fligner.test(resid ~ location, data = temperature)
+
+ggplot(temperature) + geom_boxplot(aes(x = location, y = resid))
+
+ggplot(temperature) + 
+  geom_point(aes(x = pred, y = resid, color = location)) +
+  geom_smooth(aes(x = pred, y = resid, color = location)) + 
+  facet_wrap(vars(location), nrow = 3)
+
+ggplot(temperature) + 
+  geom_qq(aes(sample = resid, color = location)) +
+  geom_qq_line(aes(sample = resid, color = location)) +
+  facet_wrap(vars(location), ncol = 3)
+
+ggplot(temperature) + 
+  geom_point(aes(x = year, y = value, color = location)) +
+  geom_line(aes(x = year, y = pred, color = location)) +
+  facet_wrap(vars(location), nrow = 3)
+
+
+emmeans(m1, specs = pairwise ~ location, adjust = "tukey")
+
+emtrends(m1, specs = pairwise ~ location, var = "year", adjust = "tukey",
+         mode = "df.error")
+
+emmip(m1, ~location, CIs = TRUE)
+emmip(m1, location~year, cov.reduce = range)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
