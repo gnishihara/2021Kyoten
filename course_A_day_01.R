@@ -246,7 +246,7 @@ wd_summary = winddata |>
                         max = max))) |> 
   arrange(year, month)
 
-wd_summary |> write_csv(file = "./winddata_summary.csv")
+wd_summary |> write_excel_csv(file = "./winddata_summary.csv")
 wd_summary |> write_rds(file = "./winddata_summary.rds")
 
 read_csv("./winddata_summary.csv")
@@ -290,18 +290,4 @@ ggplot(wd_summary) +
                     ymax = wind_mean + wind_sd),
                 width = 0) +
   theme_grey(30)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
