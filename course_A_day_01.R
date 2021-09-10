@@ -3,6 +3,10 @@
 # 水産海洋データ解析演習（A日程）
 # 2021 / 09 / 10 (Day 1)
 
+# パッケージのインストール
+install.packages("tidyverse")
+install.packages("lubridate")
+
 # パッケージの読み込み #########################################################
 
 library(tidyverse)
