@@ -8,7 +8,6 @@ install.packages("tidyverse")
 install.packages("lubridate")
 
 # パッケージの読み込み #########################################################
-
 library(tidyverse)
 library(lubridate)
 
