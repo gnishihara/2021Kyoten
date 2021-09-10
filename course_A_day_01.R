@@ -275,3 +275,28 @@ dall = dall |>
   group_by(date) |> 
   filter(near(length(wind), 144))
 
+# ggplot 
+
+ggplot(wd_summary) +
+  geom_point(aes(x = month, y = wind_mean),
+             size = 5) +
+  geom_errorbar(aes(x = month,
+                    ymin = wind_mean - wind_sd,
+                    ymax = wind_mean + wind_sd),
+                width = 0) +
+  theme_grey(30)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
