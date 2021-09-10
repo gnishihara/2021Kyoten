@@ -2,10 +2,11 @@
 # 公開臨海実習
 # 水産海洋データ解析演習（A日程）
 # 2021 / 09 / 10 (Day 1)
+# Greg Nishihara
 
 # パッケージのインストール
-install.packages("tidyverse")
-install.packages("lubridate")
+# install.packages("tidyverse")
+# install.packages("lubridate")
 
 # パッケージの読み込み #########################################################
 library(tidyverse)
@@ -14,6 +15,16 @@ library(lubridate)
 # 基本コーディング作業 #########################################################
 # c(), list(), data.frame(), array()
 
+a = c(20, 10, 30)
+# b = list("A", "C", "Z")
+b = c("A", "C", "Z")
+data.frame(a, b)
+array(data = c(1:9), dim = c(3, 3))
+matrix(1:9, nrow = 3, ncol = 3, byrow = TRUE)
+array(data = c(1:3^3), dim = c(3, 3, 3))
+1:9
+seq(1, 9, by = 1)
+seq(1, 9, by = 0.5)
 
 # iris データの紹介 ############################################################
 
