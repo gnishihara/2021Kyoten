@@ -174,21 +174,104 @@ d4 = read_csv(URL4, skip = 1)
 
 # lubridate::parse_datetime(), lubridate::ymd_hms() ################################
 
-d1 |> 
+dall = bind_rows(d1, d2, d3, d4)
+
+dall = dall |> 
   mutate(datetime = parse_datetime(`日付 時間, GMT+09:00`,
                                "%m/%d/%Y %I:%M:%S %p",
                                locale = locale("ja")),
-         .before = `日付 時間, GMT+09:00`)
+         .before = `日付 時間, GMT+09:00`) |> 
+  rename(light = matches("PAR"),
+         wind = matches("風速"),
+         gust = matches("突風"),
+         mbar = matches("mbar")) |> 
+  select(datetime, light, wind, gust, mbar)
+
+# Remove trailing seconds ######################################################
+
+dall = dall |> mutate(datetime = floor_date(datetime, unit = "minutes"))
 
 # separate wind and PAR+mbar data ##############################################
 
+winddata = dall |> select(datetime, wind, gust)
+lightdata = dall |> select(datetime, light, mbar)
+
 # write_csv() ##################################################################
+
+winddata |> write_csv(file = "./winddata.csv")
+lightdata |> write_csv(file = "./lightdata.csv")
  
 ################################################################################
 # full_join(), inner_join() ####################################################
 
-# left_join(), right_join() ####################################################
+x = winddata |> slice_head(n = 100) |> slice_sample(n = 20)
+y = lightdata |> slice_head(n = 100) |> slice_sample(n = 20)
 
-# bind_rows(), bind_cols() #####################################################
+full_join(x, y, by = "datetime")
+inner_join(x, y, by = "datetime")
 
 ################################################################################
+# Summary statistics
+# Daily
+winddata |> 
+  mutate(date = as_date(datetime)) |> 
+  group_by(date) |> 
+  mutate(N = length(wind)) |> 
+  ungroup() |> 
+  filter(near(N, 144)) |> 
+  group_by(date) |> 
+  summarise(across(c(wind, gust),
+                   list(mean = mean,
+                        sd = sd,
+                        max = max,
+                        median = median)))
+
+# Monthly
+
+wd_summary = winddata |> 
+  mutate(date = as_date(datetime)) |> 
+  group_by(date) |> 
+  mutate(N = length(wind)) |> 
+  ungroup() |> 
+  filter(near(N, 144)) |> 
+  group_by(date) |> 
+  summarise(across(c(wind, gust), mean)) |> 
+  mutate(month = month(date),
+         year = year(date)) |> 
+  group_by(month, year) |> 
+  summarise(across(c(wind, gust),
+                   list(mean = mean, 
+                        sd = sd,
+                        min = min,
+                        max = max))) |> 
+  arrange(year, month)
+
+wd_summary |> write_csv(file = "./winddata_summary.csv")
+wd_summary |> write_rds(file = "./winddata_summary.rds")
+
+read_csv("./winddata_summary.csv")
+read_rds("./winddata_summary.rds")
+
+################################################################################
+# tibble()
+
+dall = tibble(url = c(URL1, URL2, URL3, URL4)) |> 
+  mutate(data = map(url, read_csv, skip = 1))
+
+dall = dall |> select(data) |> unnest(data) |> 
+  rename(datetime = matches("日付"),
+         light = matches("PAR"),
+         wind = matches("風速"),
+         gust = matches("突風"),
+         mbar = matches("mbar"),
+         id = `#`)
+
+dall = dall |> 
+  mutate(datetime = parse_datetime(datetime,
+                                   "%m/%d/%Y %I:%M:%S %p",
+                                   locale = locale("ja"))) |> 
+  mutate(datetime = floor_date(datetime, "minutes")) |> 
+  mutate(date = as_date(datetime)) |> 
+  group_by(date) |> 
+  filter(near(length(wind), 144))
+
