@@ -167,7 +167,18 @@ URL2 = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTt_rEpmL7eWJtOc5MprXeih
 URL3 = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSjodK7zDfhObB8OXSgfq0ZMJQh2d1Q__TFoSJ-6pPnsz50QE34xdJuJ5HQzR5RvyprB2GvsQYPw6Q4/pub?output=csv"
 URL4 = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRn0FUJhsKmyjTNPqahTZnhYvXP-ox6_ze1rwmMCFqpil3vyxsmfBgR-3NyGwfriH8z7xh4v38JemnU/pub?output=csv"
 
-# parse_date(), ymd_hms() ######################################################
+d1 = read_csv(URL1, skip = 1)
+d2 = read_csv(URL2, skip = 1)
+d3 = read_csv(URL3, skip = 1)
+d4 = read_csv(URL4, skip = 1)
+
+# lubridate::parse_datetime(), lubridate::ymd_hms() ################################
+
+d1 |> 
+  mutate(datetime = parse_datetime(`日付 時間, GMT+09:00`,
+                               "%m/%d/%Y %I:%M:%S %p",
+                               locale = locale("ja")),
+         .before = `日付 時間, GMT+09:00`)
 
 # separate wind and PAR+mbar data ##############################################
 
