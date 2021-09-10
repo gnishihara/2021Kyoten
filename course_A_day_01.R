@@ -146,7 +146,18 @@ iris2 |> group_by(Species) |>
                values_to = "value")
 
 # separate(), unite() ##########################################################
- 
+
+iris2 |> group_by(Species) |> 
+  summarise(across(matches("(Petal)|(Sepal)"), 
+                   list(mean = mean, sd = sd, samples = length, median = median,
+                        minimum = min, maximum = max))) |> 
+  pivot_longer(!Species, names_to = "variable",
+               values_to = "value") |> 
+  separate(variable, into = c("Part", "Measurement", "Statistic")) |> 
+  mutate(Genus = "Iris", .before = Species) |> 
+  unite("GS", Genus, Species, sep = " ")
+
+
 ################################################################################ 
 
 # read_csv() ###################################################################
