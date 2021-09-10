@@ -58,28 +58,92 @@ iris[[2]]
 iris2 = iris  |> as_tibble()
 
 # mutate() #####################################################################
- 
+
+iris2 = iris2 |> mutate(Petal.Area = Petal.Length * Petal.Width) 
+iris2 = iris2 |> mutate(Sepal.Area = Sepal.Length * Sepal.Width) 
+
+iris2 |> mutate(Petal.Area = Petal.Length * Petal.Width,
+                Sepal.Area = Sepal.Length * Sepal.Width) 
+
+iris2 = iris2 |> 
+  mutate(Petal.Area = Petal.Length * Petal.Width) |> 
+  mutate(Sepal.Area = Sepal.Length * Sepal.Width) 
+
 # select() #####################################################################
+
+iris2 |> select(Petal.Area, Species)
+iris2 |> select(!c(Petal.Area, Petal.Length, Petal.Width))
+iris2 |> select(matches("(Petal)"))
 
 # rename() #####################################################################
 
+iris2 |> rename(PL = Petal.Length)
+iris2 |> rename_with(toupper, matches("(Area)"))
+
 # relocate() ###################################################################
+
+iris2 |> relocate(Species, .before = Sepal.Length)
+iris2 |> relocate(Petal.Area, Sepal.Area, .before = Species) 
 
 # pull() #######################################################################
 
+iris2 |> pull(Species)
+
 # filter() #####################################################################
+
+iris2 |> filter(str_detect(Species, "virginica"))
+iris2 |> filter(str_detect(Species, "(virginica)|(versicolor)"))
+
+iris2 |> filter(str_detect(Species, "setosa") & Petal.Length < 1)
+
+iris2 |> filter(Petal.Length < 1.5)
+
+iris2 |> filter(Petal.Length >= 1.5)
+iris2 |> filter(!(Petal.Length < 1.5))
+
+iris2 |> filter(between(Petal.Length, 2, 3))
 
 # distinct() ###################################################################
 
+iris2 |> distinct(Species)
+
+bind_rows(iris2, iris2) |> arrange(Species, Petal.Length)
+
 # slice() ######################################################################
+
+iris2 |> slice(5:10)
+iris2 |> slice_head(n = 10)
+iris2 |> slice_tail(n = 3)
 
 # arrange() ####################################################################
 
+iris2 |> arrange(Petal.Length)
+iris2 |> arrange(desc(Petal.Length))
+iris2 |> arrange(desc(Petal.Length), desc(Petal.Width))
+
 # group_by(), group_nest(), unnest() ###########################################
 
-# group_map(), group_modify() ##################################################
+iris2 |> group_by(Species)
 
-# drop_na(), replace_na() ######################################################
+iris2 |> group_by(Species) |> summarise(Sepal.Length_mean = mean(Sepal.Length))
+
+iris2 |> group_by(Species) |> 
+  summarise(Sepal.Length_mean = mean(Sepal.Length),
+            Sepal.Length_sd = sd(Sepal.Length))
+
+iris2 |> group_by(Species) |> 
+  summarise(across(matches("Petal"), list(m = mean, s = sd)))
+
+iris2 |> group_by(Species) |> 
+  summarise(across(matches("(Petal)|(Sepal)"), list(m = mean, s = sd)))
+
+iris2 |> group_by(Species) |> 
+  summarise(across(matches("(Petal)|(Sepal)"), 
+                   list(mean = mean, sd = sd, samples = length, median = median,
+                        minimum = min, maximum = max))) |> 
+  pivot_longer(!Species, names_to = c("Part", "Measurement", "Statistic"),
+               names_pattern = "(.*)\\.(.*)_(.*)",
+               values_to = "value")
 
 # separate(), unite() ##########################################################
  
