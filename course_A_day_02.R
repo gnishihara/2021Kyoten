@@ -217,8 +217,44 @@ ggplot(dall2) +
                      limit = c(0, 2),
                      breaks = seq(0,2, by = 0.5))
 
+dall_daily = dall |> group_by(date) |> 
+  summarise(across(c(wind, gust), mean))
 
+dall_daily = dall_daily |> 
+  mutate(ym = floor_date(date, "month"))
 
+ggplot() + 
+  geom_point(aes(x = ym, y = wind_mean), 
+             data = dall2,
+             size = 1.0) +
+  geom_errorbar(aes(x = ym,
+                    ymin = wind_mean - wind_sd/sqrt(wind_sample),
+                    ymax = wind_mean + wind_sd/sqrt(wind_sample)),
+                data = dall2,
+                width = 0,
+                size = 0.75) +
+  geom_point(aes(x = ym, y = wind),
+             data = dall_daily,
+             alpha = 0.5,
+             position = position_jitter(width = 5),
+             size = 0.5) +
+  geom_text(aes(x = ym, y = 0, 
+                label = sprintf("%0.3f ± %0.3f", 
+                                wind_mean, 
+                                wind_sd/sqrt(wind_sample))),
+            data = dall2,
+            size = 2) + 
+  scale_x_date("Year-Month",
+               date_breaks = "months",
+               date_labels = "%Y-%m") +
+  scale_y_continuous(parse(text = ylabel),
+                     limit = c(0, 6),
+                     breaks = seq(0, 6, by = 2)) +
+  theme(text = element_text(size = 10))
+
+showtext_auto()
+ggsave("windspeed.pdf", width = 2*80, 
+       height = 80, units = "mm")
 
 
   
