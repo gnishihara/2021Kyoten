@@ -19,7 +19,8 @@ font_add_google("Noto Sans", family = "notosans")
 # font_add_google("Noto Sans JP", family = "notosanscjk")
 # font_add_google("Noto Serif JP", family = "notoserifcjk")
 
-theme_pubr(base_size = 24, base_family = "notosans") |> theme_set()
+theme_pubr(base_size = 24, base_family = "notosans") |> 
+  theme_set()
 
 # theme_grey() # デフォルトの theme
 
@@ -147,6 +148,7 @@ ggsave(filename = "day2plot01.pdf",
 
 # magick #####################################################################
 library(magick)
+library()
 
 img = image_read_pdf("day2plot01.pdf", density = 600)
 img |> image_write("day2plot01.png")
@@ -158,4 +160,73 @@ URL1 = "https://docs.google.com/spreadsheets/d/e/2PACX-1vR0FUr9fZ8SbFw3UGS6lulZq
 URL2 = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTt_rEpmL7eWJtOc5MprXeihH4LTXkE9CyoLyPext6j3_9wbYAQAXQlEiSOs_Hse0hGLH6-zb6NJVKu/pub?output=csv"
 URL3 = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSjodK7zDfhObB8OXSgfq0ZMJQh2d1Q__TFoSJ-6pPnsz50QE34xdJuJ5HQzR5RvyprB2GvsQYPw6Q4/pub?output=csv"
 URL4 = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRn0FUJhsKmyjTNPqahTZnhYvXP-ox6_ze1rwmMCFqpil3vyxsmfBgR-3NyGwfriH8z7xh4v38JemnU/pub?output=csv"
+
+dall = tibble(url = c(URL1, URL2, URL3, URL4)) |> 
+  mutate(data = map(url, read_csv, skip = 1))
+
+dall = dall |> select(data) |> unnest(data)
+
+dall = dall |> 
+  rename(id = `#`,
+         datetime = matches("日付"),
+         light = matches("PAR"),
+         wind = matches("風速"),
+         gust = matches("突風"),
+         mbar = matches("mbar")) |> 
+  mutate(datetime = parse_datetime(datetime,
+                                    "%m/%d/%Y %I:%M:%S %p",
+                                    locale = locale("ja"))) |> 
+  mutate(datetime = floor_date(datetime, "minutes"))
+
+dall = dall |> 
+  mutate(date = as_date(datetime)) |> 
+  group_by(date) |> 
+  filter(near(length(wind), 144))
+
+dall2 = dall |> group_by(date) |> 
+  summarise(across(c(wind, gust), mean))
+
+dall2 = dall2 |> mutate(year = year(date),
+                month = month(date),
+                ym = floor_date(date, "month"))
+
+dall2 = dall2 |> group_by(ym, year, month) |> 
+  summarise(across(c(gust, wind),
+                   list(mean = mean, 
+                        sd = sd,
+                        sample = length))) 
+
+ggplot(dall2) + 
+  geom_point(aes(x = month, y = wind_mean))
+
+# ylabel = "Wind speed (m/s)"
+ylabel = "'Wind speed'~(m~s^{-1})" # ?plotmath
+
+ggplot(dall2) + 
+  geom_point(aes(x = ym, y = wind_mean),
+             size = 5) +
+  geom_errorbar(aes(x = ym,
+                    ymin = wind_mean - wind_sd/sqrt(wind_sample),
+                    ymax = wind_mean + wind_sd/sqrt(wind_sample)),
+                width = 0,
+                size = 2) +
+  scale_x_date("Year-Month",
+               date_breaks = "months",
+               date_labels = "%Y-%m") +
+  scale_y_continuous(parse(text = ylabel),
+                     limit = c(0, 2),
+                     breaks = seq(0,2, by = 0.5))
+
+
+
+
+
+  
+
+
+
+
+
+
+
 
