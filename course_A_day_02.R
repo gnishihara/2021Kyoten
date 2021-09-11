@@ -359,3 +359,60 @@ ggsave("iris.pdf", width = 2.5*80,
        height = 2*80, units = "mm")
 
 
+iris3 = iris2 |> 
+  group_by(Species) |> 
+  summarise(across(matches("Sepal"),
+                   list(mean = mean,
+                        sd = sd)))
+
+xlabel = "Sepal width (cm)"
+ylabel = "Sepal length (cm)"
+
+ggplot(iris3) +
+  geom_errorbar(aes(x = Sepal.Width_mean,
+                    y = Sepal.Length_mean,
+                    xmin = Sepal.Width_mean - Sepal.Width_sd,
+                    xmax = Sepal.Width_mean + Sepal.Width_sd,
+                    color = Species),
+                width = 0) +
+  geom_errorbar(aes(x = Sepal.Width_mean,
+                    y = Sepal.Length_mean,
+                    ymin = Sepal.Length_mean - Sepal.Length_sd,
+                    ymax = Sepal.Length_mean + Sepal.Length_sd,
+                    color = Species),
+                width = 0) +
+  geom_point(aes(x = Sepal.Width_mean,
+                 y = Sepal.Length_mean,
+                 color = Species,
+                 shape = Species),
+             size = 5) +
+  scale_shape_discrete(labels = scales::parse_format()) +
+  scale_color_viridis(discrete = TRUE, 
+                      end = 0.9,
+                      labels = scales::parse_format()) +
+  scale_x_continuous(xlabel, 
+                     limits = c(2, 5),
+                     breaks = seq(2, 5, by = 1)) +
+  scale_y_continuous(ylabel,
+                     limits = c(4, 8),
+                     breaks = seq(4, 8, by = 1)) +
+  guides(color = guide_legend(title = "",
+                              override.aes = list(size = 5,
+                                                  linetype = NA),
+                              label.hjust = 0),
+         shape = "none") +
+  theme(legend.position = c(1, 1),
+        legend.justification = c(1, 1),
+        legend.title = element_blank(),
+        legend.background = element_blank())
+
+
+
+  showtext_auto()
+ggsave("iris2.pdf", width = 2.5*80, 
+       height = 2*80, units = "mm")
+
+
+
+
+
