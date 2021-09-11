@@ -133,7 +133,23 @@ ggarrange(plot1, plot2, common.legend = TRUE)
 
 # ggsave() #####################################################################
 
-# magick() #####################################################################
+ggsave(filename = "day2plot.png") # 最後に表示された図を保存
+
+ggsave(filename = "day2plot01.png",
+       plot = plot1, 
+       width = 200, height = 200, unit = "mm",
+       dpi = 600)
+
+ggsave(filename = "day2plot01.pdf",
+       plot = plot1, 
+       device = cairo_pdf,
+       width = 200, height = 200, unit = "mm")
+
+# magick #####################################################################
+library(magick)
+
+img = image_read_pdf("day2plot01.pdf", density = 600)
+img |> image_write("day2plot01.png")
 
 ################################################################################
 # read_csv() ###################################################################
