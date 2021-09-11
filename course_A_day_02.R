@@ -535,5 +535,89 @@ showtext_auto()
 ggsave("iris_line.pdf", width = 2.5*80, 
        height = 2*80, units = "mm")
 
+##################
+
+xlabel = "Species"
+ylabel = "Sepal length (cm)"
+
+ggplot(iris2) + 
+  geom_boxplot(aes(x = fct_reorder(Species, 
+                                   Sepal.Length,
+                                   mean, .desc = TRUE), 
+                   y = Sepal.Length,
+                   fill = Species),
+               width = 0.25) +
+  scale_x_discrete(xlabel, labels = scales::parse_format()) +
+  scale_y_continuous(ylabel) +
+  scale_fill_viridis_d(labels = scales::parse_format(),
+                       end = 0.9) +
+  guides(fill = "none") +
+  coord_flip()
+
+showtext_auto()
+ggsave("iris_boxplot.pdf", width = 2.5*80, 
+       height = 2*80, units = "mm")
 
 
+xlabel = "Species"
+ylabel = "Sepal length (cm)"
+
+ggplot(iris3) + 
+  geom_col(aes(x = fct_reorder(Species, 
+                                   Sepal.Length_mean, 
+                               .desc = TRUE), 
+                   y = Sepal.Length_mean,
+                   fill = Species),
+               width = 0.25) +
+  scale_x_discrete(xlabel, labels = scales::parse_format()) +
+  scale_y_continuous(ylabel, limits = c(0, 8)) +
+  scale_fill_viridis_d(labels = scales::parse_format(),
+                       end = 0.9) +
+  guides(fill = "none")
+
+showtext_auto()
+ggsave("iris_barplot.pdf", width = 2.5*80, 
+       height = 2*80, units = "mm")
+
+############
+
+iris3 = iris2 |> 
+  pivot_longer(cols = matches("(Sepal)|(Petal)"),
+               names_to = c("Location", "Measurement"),
+               names_pattern = "(.*)\\.(.*)")
+
+xlabel = "Measurement"
+ylabel = "Dimension (cm)"
+iris4 = iris3 |> group_by(Species, Location, Measurement) |> 
+  summarise(value_m = mean(value),
+            value_s = sd(value))
+iris4 = iris4 |> ungroup() |> group_nest(Location) |> 
+  mutate(Location = str_glue("{Location} ({c('A', 'B')})")) |> 
+  unnest(data)
+
+iris5 = iris4 |> distinct(Location)
+ggplot(iris4) + 
+  geom_col(aes(x = Measurement,
+                   y = value_m,
+                   fill = Species),
+           position = position_dodge2(),
+               width = 0.5) +
+  geom_text(aes(x = 2, 
+                y = 8, 
+                label = Location),
+            family = "notosans",
+            check_overlap = T,
+            size = 8) + 
+  scale_x_discrete() + 
+  scale_y_continuous(ylabel, limits = c(0, 8)) +
+  scale_fill_viridis_d(end = 0.9, labels = scales::parse_format()) +
+  guides(fill = guide_legend(title = "",
+                             label.hjust = 0)) +
+  facet_rep_grid(cols = vars(Location)) +
+  theme(legend.title = element_blank(),
+        strip.background = element_blank(),
+        strip.text = element_blank())
+
+showtext_auto()
+ggsave("iris_boxplot2.pdf", width = 2.5*80, 
+       height = 2*80, units = "mm")
