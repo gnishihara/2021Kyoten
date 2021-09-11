@@ -114,9 +114,22 @@ ggplot(iris3) +
   facet_rep_grid(cols = vars(Measurement),
                  rows = vars(Location))
 
-
-
 # ggarrange() ##################################################################
+# ggpubr::ggarrange()
+
+plot1 = ggplot(iris2) + 
+  geom_point(aes(x = Petal.Length,
+                 y = Petal.Width,
+                 color = Species)) + 
+  scale_color_viridis_d(end = 0.9)
+
+plot2 = ggplot(iris2) + 
+  geom_boxplot(aes(x = Species,
+                 y = Petal.Length,
+                 fill = Species)) + 
+  scale_fill_viridis_d(end = 0.9)
+
+ggarrange(plot1, plot2, common.legend = TRUE)
 
 # ggsave() #####################################################################
 
