@@ -454,4 +454,86 @@ showtext_auto()
 ggsave("iris_line.pdf", width = 2.5*80, 
        height = 2*80, units = "mm")
 
+################################################################################
+iris2
+# 決定係数：回帰曲線からでるr2
+# 相関係数：回帰曲線と関係ない
+iris2 |> distinct(Species)
+iris2 |> group_by(Species) |> 
+  group_map(~cor(.x$Sepal.Length, .x$Sepal.Width))
+
+msetosa = lm(Sepal.Length ~ Sepal.Width, 
+        data = iris2 |> filter(str_detect(Species, "setosa")))
+mversicolor = lm(Sepal.Length ~ Sepal.Width, 
+             data = iris2 |> filter(str_detect(Species, "versi")))
+mvirginica = lm(Sepal.Length ~ Sepal.Width, 
+             data = iris2 |> filter(str_detect(Species, "virg")))
+
+# summary(msetosa) |> str()
+arsquareS = summary(msetosa)$adj.r.squared
+arsquareS = sprintf("R[adj]^2 == %0.4f", arsquareS)
+arsquareVe = summary(mversicolor)$adj.r.squared
+arsquareVe = sprintf("R[adj]^2 == %0.4f", arsquareVe)
+arsquareVi = summary(mvirginica)$adj.r.squared
+arsquareVi = sprintf("R[adj]^2 == %0.4f", arsquareVi)
+
+xlabel = "Sepal width (cm)"
+ylabel = "Sepal length (cm)"
+ggplot(iris2) + 
+  geom_point(aes(x = Sepal.Width, 
+                 y = Sepal.Length, 
+                 color = Species,
+                 shape = Species),
+             size = 3, alpha = 0.5) +
+  geom_smooth(aes(x = Sepal.Width,
+                  y = Sepal.Length,
+                  color = Species),
+              method = "lm",
+              formula = y ~ x,
+              se = FALSE) +
+  annotate(geom = "text", 
+           x = 4.5, y = 5.5,
+           label = arsquareS,
+           family = "notosans",
+           hjust = 0, vjust =0, 
+           size = 6, parse = TRUE) +
+  annotate(geom = "text", 
+           x = 3.5, y = 6.5,
+           label = arsquareVe,
+           family = "notosans",
+           hjust = 0, vjust =0, 
+           size = 6, parse = TRUE) +
+  annotate(geom = "text", 
+           x = 4, y = 7.2,
+           label = arsquareVi,
+           family = "notosans",
+           hjust = 0, vjust =0, 
+           size = 6, parse = TRUE) +
+  scale_shape_discrete(labels = scales::parse_format()) +
+  scale_color_viridis(discrete = TRUE, 
+                      end = 0.9,
+                      labels = scales::parse_format()) +
+  scale_x_continuous(xlabel, 
+                     limits = c(2, 5),
+                     breaks = seq(2, 5, by = 1)) +
+  scale_y_continuous(ylabel,
+                     limits = c(4, 8),
+                     breaks = seq(4, 8, by = 1)) +
+  guides(color = guide_legend(title = "",
+                              override.aes = list(size = 5,
+                                                  linetype = NA,
+                                                  fill = NA),
+                              label.hjust = 0),
+         shape = "none",
+         linetype = "none") +
+  theme(legend.position = c(1, 0),
+        legend.justification = c(1, 0),
+        legend.title = element_blank(),
+        legend.background = element_blank())
+
+showtext_auto()
+ggsave("iris_line.pdf", width = 2.5*80, 
+       height = 2*80, units = "mm")
+
+
 
