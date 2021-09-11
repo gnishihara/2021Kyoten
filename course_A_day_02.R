@@ -596,6 +596,7 @@ iris4 = iris4 |> ungroup() |> group_nest(Location) |>
   unnest(data)
 
 iris5 = iris4 |> distinct(Location)
+
 ggplot(iris4) + 
   geom_col(aes(x = Measurement,
                    y = value_m,
