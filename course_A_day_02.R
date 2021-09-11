@@ -6,6 +6,10 @@
 # パッケージの読み込み #########################################################
 # 今日の演習につかうパッケージ
 # install.packages() しましょう。
+
+# Linux 環境だけやる
+Sys.setlocale("LC_TIME", "en_US.UTF-8")
+
 library(tidyverse)
 library(lubridate)
 
@@ -247,7 +251,7 @@ ggplot() +
             family = "notosans") + 
   scale_x_date("Year-Month",
                date_breaks = "months",
-               date_labels = "%Y-%m") +
+               date_labels = "%Y-%b") +
   scale_y_continuous(parse(text = ylabel),
                      limit = c(0, 6),
                      breaks = seq(0, 6, by = 2)) +
@@ -257,12 +261,63 @@ showtext_auto()
 ggsave("windspeed.pdf", width = 2*80, 
        height = 80, units = "mm")
 
+ggsave("windspeed.svg", width = 2*80, 
+       height = 80, units = "mm")
 
   
+"2020-10-01"
+
+dall2$ym
+
+gnn_date = function() {
+  function(x) {
+    m = format(x, "%b")
+    # m = str_sub(m, start = 1, end = 1)
+    y = format(x, "%Y")
+    ifelse(duplicated(y), m, sprintf("%s\n%s", m,y))
+  }
+}
 
 
+ggplot() + 
+  geom_point(aes(x = ym, y = wind_mean), 
+             data = dall2,
+             size = 1.0) +
+  geom_errorbar(aes(x = ym,
+                    ymin = wind_mean - wind_sd/sqrt(wind_sample),
+                    ymax = wind_mean + wind_sd/sqrt(wind_sample)),
+                data = dall2,
+                width = 0,
+                size = 0.75) +
+  geom_point(aes(x = ym, y = wind),
+             data = dall_daily,
+             alpha = 0.5,
+             position = position_jitter(width = 5),
+             size = 0.5) +
+  geom_text(aes(x = ym, y = 0, 
+                label = sprintf("%0.3f ± %0.3f", 
+                                wind_mean, 
+                                wind_sd/sqrt(wind_sample))),
+            data = dall2,
+            size = 2,
+            family = "notosans") + 
+  scale_x_date("Year-Month",
+               date_breaks = "months",
+               labels = gnn_date()) +
+  scale_y_continuous(parse(text = ylabel),
+                     limit = c(0, 6),
+                     breaks = seq(0, 6, by = 2)) +
+  theme(text = element_text(size = 10))
 
+showtext_auto()
+ggsave("windspeed.pdf", width = 2*80, 
+       height = 80, units = "mm")
 
+################################################################################
+################################################################################
+################################################################################
+################################################################################
+# Back to Iris
 
 
 
