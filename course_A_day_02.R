@@ -318,6 +318,7 @@ ggsave("windspeed.pdf", width = 2*80,
 ################################################################################
 ################################################################################
 # Back to Iris
+library(viridis)
 
 iris2 = iris |> as_tibble()
 # ?plotmath
@@ -327,7 +328,6 @@ iris2 = iris2 |>
 # 
 xlabel = "Sepal width (cm)"
 ylabel = "Sepal length (cm)"
-library(viridis)
 ggplot(iris2) + 
   geom_point(aes(x = Sepal.Width, 
                  y = Sepal.Length, 
@@ -414,5 +414,44 @@ ggsave("iris2.pdf", width = 2.5*80,
 
 
 
+xlabel = "Sepal width (cm)"
+ylabel = "Sepal length (cm)"
+ggplot(iris2) + 
+  geom_point(aes(x = Sepal.Width, 
+                 y = Sepal.Length, 
+                 color = Species,
+                 shape = Species),
+             size = 3, alpha = 0.5) +
+  geom_smooth(aes(x = Sepal.Width,
+                  y = Sepal.Length,
+                  color = Species),
+              method = "lm",
+              formula = y ~ x,
+              se = FALSE) +
+  scale_shape_discrete(labels = scales::parse_format()) +
+  scale_color_viridis(discrete = TRUE, 
+                      end = 0.9,
+                      labels = scales::parse_format()) +
+  scale_x_continuous(xlabel, 
+                     limits = c(2, 5),
+                     breaks = seq(2, 5, by = 1)) +
+  scale_y_continuous(ylabel,
+                     limits = c(4, 8),
+                     breaks = seq(4, 8, by = 1)) +
+  guides(color = guide_legend(title = "",
+                              override.aes = list(size = 5,
+                                                  linetype = NA,
+                                                  fill = NA),
+                              label.hjust = 0),
+         shape = "none",
+         linetype = "none") +
+  theme(legend.position = c(1, 1),
+        legend.justification = c(1, 1),
+        legend.title = element_blank(),
+        legend.background = element_blank())
+
+showtext_auto()
+ggsave("iris_line.pdf", width = 2.5*80, 
+       height = 2*80, units = "mm")
 
 
