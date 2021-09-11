@@ -243,7 +243,8 @@ ggplot() +
                                 wind_mean, 
                                 wind_sd/sqrt(wind_sample))),
             data = dall2,
-            size = 2) + 
+            size = 2,
+            family = "notosans") + 
   scale_x_date("Year-Month",
                date_breaks = "months",
                date_labels = "%Y-%m") +
