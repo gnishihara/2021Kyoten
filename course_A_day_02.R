@@ -4,20 +4,24 @@
 # Day 02
  
 # パッケージの読み込み #########################################################
-
+# 今日の演習につかうパッケージ
+# install.packages() しましょう。
 library(tidyverse)
 library(lubridate)
-library(showtext)
-library(ggpubr)
-library(lemon)
+
+library(showtext) # システムフォント
+library(ggpubr)   # theme_pubr()
+library(lemon)    # 作図用のパッケージ
 
 # ggplot の設定 ################################################################
 font_add_google("Noto Sans", family = "notosans")
 # font_add_google("Noto Serif", family = "notoserif")
 # font_add_google("Noto Sans JP", family = "notosanscjk")
+# font_add_google("Noto Serif JP", family = "notoserifcjk")
 
-theme_pubr(base_size = 10, base_family = "notosans") |> theme_set()
+theme_pubr(base_size = 24, base_family = "notosans") |> theme_set()
 
+# theme_grey() # デフォルトの theme
 
 # iris データの tibble化 #######################################################
 
@@ -26,32 +30,91 @@ iris2 = iris |> as_tibble()
 # geom_point() #################################################################
 
 ggplot(iris2) + 
-  geom_point(aes(x = Petal.Length, y = Petal.Width,
-                 shape = Species, color = Species))
+  geom_point(aes(x = Petal.Length, 
+                 y = Petal.Width,
+                 shape = Species,
+                 color = Species))
 
 # geom_boxplot() ###############################################################
-
-ggplot(iris2) + 
-  geom_boxplot(aes(x = Species, y = Petal.Length,
-                 fill = Species))
+# alpha : 透明度 0~1
+ggplot() + 
+  geom_boxplot(aes(x = Species, 
+                   y = Petal.Length,
+                   fill = Species,
+                   color = Species),
+               alpha = 0.5, 
+               data = iris2)
 
 # scale_*() ####################################################################
 
 ggplot(iris2) + 
-  geom_point(aes(x = Petal.Length, y = Petal.Width,
-                 shape = Species, color = Species)) +
-  scale_color_viridis_d(end = 0.8)
+  geom_point(aes(x = Petal.Length, 
+                 y = Petal.Width,
+                 shape = Species, 
+                 color = Species),
+             size = 5) +
+  scale_color_viridis_d(end = 0.9)
+
+
+ggplot() + 
+  geom_boxplot(aes(x = Species, 
+                   y = Petal.Length,
+                   fill = Species,
+                   color = Species),
+               data = iris2) +
+  scale_fill_viridis_d(end = 0.9, alpha = 0.5) +
+  scale_color_viridis_d(end = 0.9, alpha = 0.8)
+
+
+
+# RColorBrewer::display.brewer.all()
 
 # facet_*() ####################################################################
 
-iris3 = iris2 |> pivot_longer(cols = matches("(Pet)|(Sep)"),
-                              names_to = c("Location", "Measurement"),
-                              names_pattern = "(.*)\\.(.*)")
+iris3 = iris2 |> 
+  pivot_longer(cols = matches("(Pet)|(Sep)"),
+               names_to = c("Location", "Measurement"),
+               names_pattern = "(.*)\\.(.*)")
+
+# iris2 |> 
+#   pivot_longer(cols = c(Petal.Length, Petal.Width,
+#                         Sepal.Length, Sepal.Width)) |> 
+#   separate(name, into = c("Location", "Measurement"))
+
 ggplot(iris3) + 
-  geom_boxplot(aes(x = Species, y = value,
+  geom_boxplot(aes(x = Species, 
+                   y = value,
                    fill = Species)) +
   facet_grid(rows = vars(Measurement),
              cols = vars(Location))
+
+ggplot(iris3) + 
+  geom_boxplot(aes(x = Species, 
+                   y = value,
+                   fill = Species)) +
+  facet_grid(rows = vars(Measurement, Location))
+
+ggplot(iris3) + 
+  geom_boxplot(aes(x = Species, 
+                   y = value,
+                   fill = Species)) +
+  facet_grid(cols = vars(Measurement, Location))
+
+ggplot(iris3) + 
+  geom_boxplot(aes(x = Species, 
+                   y = value,
+                   fill = Species)) +
+  facet_wrap(facets = vars(Measurement, Location),
+             ncol = 3)
+
+ggplot(iris3) + 
+  geom_boxplot(aes(x = Species, 
+                   y = value,
+                   fill = Species)) +
+  facet_rep_grid(cols = vars(Measurement),
+                 rows = vars(Location))
+
+
 
 # ggarrange() ##################################################################
 
