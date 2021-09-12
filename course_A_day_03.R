@@ -2,7 +2,7 @@
 # 公開臨海実習
 # 水産海洋データ解析演習（A日程）
 # Day 03
- 
+
 # パッケージの読み込み #########################################################
 # 今日の演習につかうパッケージ
 # install.packages() しましょう。
@@ -176,5 +176,46 @@ iris2 |>
   mutate(slope_slw = map(data, calc_slope, f = "sl ~ sw")) |> 
   mutate(slope_plw = map(data, calc_slope, f = "pl ~ pw")) |> 
   unnest(c(slope_slw, slope_plw))
+
+##
+
+
+
+tokyo = read_csv("https://www3.nhk.or.jp/n-data/opendata/coronavirus/nhk_news_covid19_prefectures_daily_data.csv", col_names = c("date", "prefcode", "pref", "new_cases", "new_cases_cs", "deaths", "deaths_cs"), skip = 1, show_col_types = F) |> mutate(date = as.Date(date), prefcode = as.double(prefcode)) |> filter(pref == "東京都") 
+ggplot(tokyo) + 
+  geom_line(aes(date, new_cases))  +
+  scale_x_date(date_breaks = "3 months")
+
+d1 = tokyo |> select(date, new_cases)
+
+breaks = c("2020-03-01",
+           "2020-06-01",
+           "2020-10-01",
+           "2021-03-01",
+           "2021-07-01",
+           "2021-10-01")
+
+filter_tokyo = function(l,r,d){
+  d |> 
+    filter(between(date, l, r)) |> 
+    # filter(near(max(new_cases), new_cases))
+    slice_max(new_cases)
+}
+
+length(breaks)
+d2 = tibble(left = breaks[-length(breaks)],
+            right = breaks[-1]) |>
+  mutate(left = ymd(left), right = ymd(right)) |> 
+  mutate(data = list(d1)) |> 
+  mutate(data = pmap(list(left, right, data),
+                     filter_tokyo)) |> 
+  unnest(data)
+
+ggplot(tokyo) + 
+  geom_line(aes(date, new_cases))  +
+  geom_vline(aes(xintercept = date),
+             data = d2) + 
+  scale_x_date(date_breaks = "3 months") 
+
 
 
