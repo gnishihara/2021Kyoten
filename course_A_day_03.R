@@ -118,8 +118,63 @@ iris2 |>
   select(Species, summary) |> 
   unnest(summary)
 
+iris2 |> 
+  group_nest(Species) |> 
+  mutate(model = map(data, fitmodel)) |> 
+  mutate(summary = map(model, anova)) |> 
+  mutate(summary = map(summary, tidy)) |> 
+  select(Species, summary) |> 
+  unnest(summary) |> 
+  drop_na()
 
 
 
+iris2 |> mutate(sl_area = sl * sw)
+
+calc_area = function(x,y) {
+  x * y
+}
+iris2 |> 
+  mutate(sl_area = map2(sl, sw, calc_area)) |> 
+  unnest(sl_area)
+
+calc_area2 = function(x1, y1, x2, y2) {
+  (x1 * y1) + (x2 * y2)
+}
+
+iris2 |> 
+  mutate(area = pmap(list(sl,sw,pl,pw), calc_area2)) |> 
+  unnest(area)
+
+iris2 |> 
+  mutate(area = pmap_dbl(list(sl,sw,pl,pw), calc_area2)) 
+
+calc_slope = function(x) {
+  m = lm(sl ~ sw, data = x)
+  cfs = coefficients(m)
+  cfs[2]
+}
+
+iris2 |> group_nest(Species) |> 
+  mutate(slope = map(data, calc_slope)) |> 
+  unnest(slope)
+
+model = "sl ~ sw"
+lm(as.formula(model), data = setosa)
+
+
+
+calc_slope = function(x, f) {
+  f = as.formula(f)
+  m = lm(f, data = x)
+  cfs = coefficients(m)
+  cfs[2]
+}
+
+iris2 |> 
+  group_nest(Species) |> 
+  mutate(slope_slw = map(data, calc_slope, f = "sl ~ sw")) |> 
+  mutate(slope_plw = map(data, calc_slope, f = "pl ~ pw")) |> 
+  unnest(c(slope_slw, slope_plw))
 
 
