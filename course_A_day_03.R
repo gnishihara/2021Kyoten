@@ -86,3 +86,40 @@ iris2 |>
                    .fns = list("stderr1" = se, 
                                "stderr2" = se2), 
                    na.rm = TRUE))
+#############################
+
+setosa     = iris2 |> filter(str_detect(Species, "setosa"))
+virginica  = iris2 |> filter(str_detect(Species, "virgi"))
+versicolor = iris2 |> filter(str_detect(Species, "versi"))
+
+mse = lm(sl ~ pl, data = setosa)
+mvi = lm(sl ~ pl, data = virginica)
+mve = lm(sl ~ pl, data = versicolor)
+
+mse |> summary()
+mvi |> summary()
+mve |> summary()
+
+fitmodel = function(x) {
+  lm(sl ~ pl, data = x)
+}
+
+iris3 = iris2 |> 
+  group_nest(Species) |> 
+  mutate(model = map(data, fitmodel)) |> 
+  mutate(summary = map(model, summary))
+
+library(broom)
+
+iris2 |> 
+  group_nest(Species) |> 
+  mutate(model = map(data, fitmodel)) |> 
+  mutate(summary = map(model, tidy)) |> 
+  select(Species, summary) |> 
+  unnest(summary)
+
+
+
+
+
+
