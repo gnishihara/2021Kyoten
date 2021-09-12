@@ -217,5 +217,52 @@ ggplot(tokyo) +
              data = d2) + 
   scale_x_date(date_breaks = "3 months") 
 
+d2 |> select(date, new_cases) |> 
+  write_excel_csv("Table01.csv")
+
+mse |> anova() |> tidy() |> write_excel_csv("Anova01.csv")
+
+
+
+
+# read_csv() ###################################################################
+# HOBO H21-002 Microstation Data @ ECSER
+URL1 = "https://docs.google.com/spreadsheets/d/e/2PACX-1vR0FUr9fZ8SbFw3UGS6lulZqbzqW34jtlRj5VmKN8S8QcS4vjYmRafC7v6fwoNljMUlJVTlYRkbrui5/pub?output=csv"
+d1 = read_csv(URL1, skip = 1)
+
+d1 = d1 |> 
+mutate(datetime = parse_datetime(`日付 時間, GMT+09:00`,
+                                 "%m/%d/%Y %I:%M:%S %p",
+                                 locale = locale("ja")),
+       .before = `日付 時間, GMT+09:00`) |> 
+  rename(light = matches("PAR"),
+         wind = matches("風速"),
+         gust = matches("突風"),
+         mbar = matches("mbar")) |> 
+  select(datetime, light, wind, gust, mbar)
+
+ggplot(d1) + 
+  geom_line(aes(x = datetime, y = mbar))
+
+# 位置にごとの偏差
+
+d1 = d1 |> 
+  mutate(date = as_date(datetime)) |> 
+  group_by(date) |> 
+  mutate(mbar_mean = mean(mbar)) |> 
+  ungroup() |> 
+  mutate(hensa = mbar - mbar_mean)
+
+ggplot(d1) + 
+  geom_line(aes(x = datetime, y = hensa)) +
+  geom_line(aes(x = datetime, y = 0))
+  
+
+
+
+
+
+
+
 
 
