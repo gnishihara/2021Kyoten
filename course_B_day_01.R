@@ -84,7 +84,8 @@ japan2$kton |> mean()
 # Testing for normality ########################################################
 # Shapiro-Wilks test ###########################################################
 # Null hypothesis: the sample came from a normally distributed population
-shapiro.test(japan2$reported_landings) 
+# shapiro.test(japan2$kton) 
+shapiro.test(fitdata$residuals)
 
 # Testing for homogeneity of variance ##########################################
 # Only when there are factors.
@@ -94,6 +95,25 @@ shapiro.test(japan2$reported_landings)
 # car::leveneTest(m1)
 # Fligner-Killeen's test (non-parametric test and is robust to non-normal data)
 # fligner.test()
+
+# QQplot
+
+dout = tibble(x = rnorm(1000, mean = 10, sd = 1))
+ggplot(dout) + geom_histogram(aes(x = x))
+
+ggplot(dout) + 
+  geom_qq(aes(sample = x)) +
+  geom_qq_line(aes(sample = x),
+               linetype = "dashed")
+
+dout = tibble(x = rpois(1000, lambda = 5))
+ggplot(dout) + geom_histogram(aes(x = x))
+
+ggplot(dout) + 
+  geom_qq(aes(sample = x)) +
+  geom_qq_line(aes(sample = x),
+               linetype = "dashed")
+
 
 ################################################################################
 URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRH8_QwdlSReHgksJaWeRgHJ6J5ELx_7zyFRN7ZVdUHl87vkbZiV9bN42Mf3do8InyTufpQAWF1rKJC/pub?output=csv"
