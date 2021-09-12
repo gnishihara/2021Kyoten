@@ -4,20 +4,23 @@
 # 線形モデル (Day 1)
 
 # パッケージの読み込み #########################################################
-
+# install.packages("")
 library(tidyverse)
 library(lubridate)
 library(showtext)
 library(ggpubr)
 library(lemon)
 library(broom)
+library(emmeans)
 
 # ggplot の設定 ################################################################
 font_add_google("Noto Sans", family = "notosans")
 # font_add_google("Noto Serif", family = "notoserif")
 # font_add_google("Noto Sans JP", family = "notosanscjk")
 
-theme_pubr(base_size = 10, base_family = "notosans") |> theme_set()
+# theme_pubr(base_size = 10, base_family = "notosans") |> 
+#   theme_set()
+theme_pubr(base_size = 10) |> theme_set()
 
 # Data are in tons from the OWID Dataset Collection (https://github.com/owid/owid-datasets)
 
@@ -26,27 +29,57 @@ dset = read_csv(URL)
 japan = dset |> filter(str_detect(Entity, "Japan"))
 korea = dset |> filter(str_detect(Entity, "South Korea"))
 
-ggplot(japan) + geom_point(aes(x = Year, y = reported_landings/1000)) 
-ggplot(korea) + geom_point(aes(x = Year, y = reported_landings/1000)) 
+ggplot(japan) + 
+  geom_point(aes(x = Year, y = reported_landings/1000)) 
+
+ggplot(korea) + 
+  geom_point(aes(x = Year, y = reported_landings/1000)) 
 
 # lm() #########################################################################
 japan2 = japan |> filter(between(Year, 1964, 1984))
-ggplot(japan2) + geom_point(aes(x = Year, y = reported_landings/1000)) 
+ggplot(japan2) + 
+  geom_point(aes(x = Year, y = reported_landings/1000)) 
 
-m1 = lm(reported_landings/1000 ~ Year, data = japan2)
+japan2 = japan2 |> 
+  mutate(kton = reported_landings / 1000)
+# kton = b0 + b1 * Year + error
+m1 = lm(kton ~ Year, data = japan2)
 summary(m1)
 
 # Extract results with tidy() ##################################################
 m1 |> tidy()
+
 anova(m1) |> tidy()
 
 # diagnostic plots #############################################################
-# 
+ 
 # plot.lm()
+plot(m1)
+
 plot(m1, which = 1)
 plot(m1, which = 2)
 plot(m1, which = 3)
 plot(m1, which = 5)
+
+
+fitdata = japan2 |> 
+  select(Year, kton) |> 
+  mutate(fit = fitted(m1),
+         residuals = residuals(m1))
+
+ggplot(japan2) + 
+  geom_point(aes(x = Year, y = kton)) +
+  geom_line(aes( x = Year, y = fit, color = "model"), 
+            data = fitdata) +
+  geom_segment(aes(x = Year, 
+                   xend = Year,
+                   y = fit,
+                   yend = fit + residuals,
+                   color = "residuals"), 
+               data = fitdata)
+  
+
+japan2$kton |> mean()
 
 # Testing for normality ########################################################
 # Shapiro-Wilks test ###########################################################
