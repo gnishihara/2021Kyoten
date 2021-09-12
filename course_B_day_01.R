@@ -127,11 +127,15 @@ y = c("nagasaki", "tokyo", "naha")
 z = str_glue("{rep(y, each = 4)}_{rep(x, 3)}")
 
 cnames = c("ym", z)
-ctypes =c("cd", rep("-", 4), "d", rep("-", 4), "d", rep("-", 6), "d", rep("-", 6),
+ctypes = c("cd", rep("-", 4), "d", rep("-", 4), "d", rep("-", 6), "d", rep("-", 6),
            "d", rep("-", 4), "d", rep("-", 4), "d", rep("-", 6), "d", rep("-", 6),
            "d", rep("-", 4), "d", rep("-", 4), "d", rep("-", 6), "d", rep("-", 6)) |> 
   paste(collapse = "")
-weather = read_csv(URL, col_names = cnames, col_types = ctypes, skip = 6)
+
+weather = read_csv(URL, 
+                   col_names = cnames, 
+                   col_types = ctypes, 
+                   skip = 6)
 
 weather = weather |> 
   pivot_longer(!ym, names_to = c("location", "measurement"),
@@ -139,10 +143,54 @@ weather = weather |>
   separate(ym, c("year", "month"), convert = T)
 ################################################################################
 
-temperature = weather |> filter(str_detect(measurement, "^temperature$")) |> drop_na()
+temperature = weather |> 
+  filter(str_detect(measurement, "^temperature$")) |> 
+  drop_na()
 
-m1 = lm(value ~ year * location, data = temperature)
+ggplot(temperature) + 
+  geom_point(aes( x = year, y = value, color = location))
+
+ggplot(temperature) + 
+  geom_boxplot(aes( x = location, 
+                    y = value, 
+                    fill = location))
+
+m0 = lm(value ~ location, data = temperature)
+m0 |> summary()
+m0 |> anova() 
+
+Z = tibble(N = c(3, 5:10, 25, 50, 100)) |> 
+  mutate(data = list(temperature)) |> 
+  mutate(data = map2(data,N,  \(x,n) {
+    x |> group_by(location) |> sample_n(n)
+  })) |> 
+  mutate(pvalue = map_dbl(data, \(x) {
+    m = lm(value ~ location, data = x)
+    z = anova(m) |> tidy() |> drop_na()
+    z$p.value
+  }))
+  
+ggplot(Z) + 
+  geom_point(aes(x = N, y = pvalue)) +
+  geom_line(aes(x = N, y = pvalue)) +
+  scale_y_continuous(trans = "log10")
+
+par(mfrow = c(2,2))
+plot(m0, which = 1)
+plot(m0, which = 2)
+plot(m0, which = 3)
+plot(m0, which = 5)
+par(mfrow = c(1,1))
+
+residuals(m0) |> shapiro.test()
+car::leveneTest(m0)
+
+
+
+
+m1 = lm(value ~ year + location, data = temperature)
 summary(m1) 
+m1 |> anova()
 
 par(mfrow = c(2,2))
 plot(m1, which = 1)
@@ -151,26 +199,16 @@ plot(m1, which = 3)
 plot(m1, which = 5)
 par(mfrow = c(1,1))
 
-shapiro.test(temperature$value)
+residuals(m1) |> shapiro.test()
 
-temperature = temperature |> 
+temperature = 
+  temperature |> 
   mutate(resid = residuals(m1),
-         pearson = residuals(m1,type = "pearson")) |>
+         pearson = residuals(m1, type = "pearson")) |>
   mutate(pred = predict(m1))
 
-temperature |> 
-  group_nest(location) |> 
-  mutate(shapiro = map(data, \(x){
-    shapiro.test(x$resid)
-  })) |> 
-  mutate(tidy = map(shapiro, tidy)) |> 
-  unnest(tidy)
-
-bartlett.test(resid ~ location, data = temperature)
-fligner.test(resid ~ location, data = temperature)
-
-ggplot(temperature) + geom_boxplot(aes(x = location, y = resid))
-ggplot(temperature) + geom_boxplot(aes(x = location, y = pearson))
+ggplot(temperature) + 
+  geom_boxplot(aes(x = location, y = resid))
 
 ggplot(temperature) + 
   geom_qq(aes(sample = resid, color = location)) +
@@ -181,6 +219,52 @@ ggplot(temperature) +
   geom_point(aes(x = pred, y = resid, color = location)) +
   geom_smooth(aes(x = pred, y = resid, color = location)) + 
   facet_wrap(vars(location), nrow = 3)
+
+ggplot(temperature) + 
+  geom_point(aes(x = year, y = value, color = location)) +
+  geom_line(aes(x = year, y = pred, color = location))
+
+
+m2 = lm(value ~ year + location + year:location, 
+        data = temperature)
+# m2 = lm(value ~ year*location,  data = temperature)
+m2 |> summary() 
+m2 |> anova()
+m1 |> anova()
+
+
+
+temperature = 
+  temperature |> 
+  mutate(resid = residuals(m2),
+         pearson = residuals(m2, type = "pearson")) |>
+  mutate(pred = predict(m2))
+
+ggplot(temperature) + 
+  geom_boxplot(aes(x = location, y = resid))
+
+ggplot(temperature) + 
+  geom_qq(aes(sample = resid, color = location)) +
+  geom_qq_line(aes(sample = resid, color = location)) +
+  facet_wrap(vars(location), ncol = 3)
+
+ggplot(temperature) + 
+  geom_point(aes(x = pred, y = resid, color = location)) +
+  geom_smooth(aes(x = pred, y = resid, color = location)) + 
+  facet_wrap(vars(location), nrow = 3)
+
+ggplot(temperature) + 
+  geom_point(aes(x = year, y = value, color = location)) +
+  geom_line(aes(x = year, y = pred, color = location))
+
+temperature = temperature |> 
+  mutate(year2 = year - 1875)
+m2 = lm(value ~ year2 + location + year2:location, 
+        data = temperature)
+
+m2 |> summary() 
+m2 |> anova()
+m1 |> anova()
 
 # Multiple comparisons #########################################################
 library(emmeans)
