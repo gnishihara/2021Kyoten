@@ -284,7 +284,7 @@ library(nlme)
 temperature = temperature |> drop_na() |> 
   mutate(location = factor(location))
 
-m1 = gls(value ~ year * location, data = temperature,
+m1 = gls(value ~ year2 * location, data = temperature,
          weights = varIdent(form=~1|location))
 
 summary(m1) 
