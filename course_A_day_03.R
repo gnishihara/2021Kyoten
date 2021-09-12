@@ -228,9 +228,20 @@ mse |> anova() |> tidy() |> write_excel_csv("Anova01.csv")
 # read_csv() ###################################################################
 # HOBO H21-002 Microstation Data @ ECSER
 URL1 = "https://docs.google.com/spreadsheets/d/e/2PACX-1vR0FUr9fZ8SbFw3UGS6lulZqbzqW34jtlRj5VmKN8S8QcS4vjYmRafC7v6fwoNljMUlJVTlYRkbrui5/pub?output=csv"
-d1 = read_csv(URL1, skip = 1)
+URL2 = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTt_rEpmL7eWJtOc5MprXeihH4LTXkE9CyoLyPext6j3_9wbYAQAXQlEiSOs_Hse0hGLH6-zb6NJVKu/pub?output=csv"
+URL3 = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSjodK7zDfhObB8OXSgfq0ZMJQh2d1Q__TFoSJ-6pPnsz50QE34xdJuJ5HQzR5RvyprB2GvsQYPw6Q4/pub?output=csv"
+URL4 = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRn0FUJhsKmyjTNPqahTZnhYvXP-ox6_ze1rwmMCFqpil3vyxsmfBgR-3NyGwfriH8z7xh4v38JemnU/pub?output=csv"
 
-d1 = d1 |> 
+d1 = read_csv(URL1, skip = 1)
+d2 = read_csv(URL2, skip = 1)
+d3 = read_csv(URL3, skip = 1)
+d4 = read_csv(URL4, skip = 1)
+
+# lubridate::parse_datetime(), lubridate::ymd_hms() ################################
+
+dall = bind_rows(d1, d2, d3, d4)
+
+dall = dall |> 
 mutate(datetime = parse_datetime(`日付 時間, GMT+09:00`,
                                  "%m/%d/%Y %I:%M:%S %p",
                                  locale = locale("ja")),
@@ -241,27 +252,50 @@ mutate(datetime = parse_datetime(`日付 時間, GMT+09:00`,
          mbar = matches("mbar")) |> 
   select(datetime, light, wind, gust, mbar)
 
-ggplot(d1) + 
+ggplot(dall) + 
   geom_line(aes(x = datetime, y = mbar))
 
 # 位置にごとの偏差
 
-d1 = d1 |> 
+dall2 = dall |> 
   mutate(date = as_date(datetime)) |> 
   group_by(date) |> 
   mutate(mbar_mean = mean(mbar)) |> 
   ungroup() |> 
   mutate(hensa = mbar - mbar_mean)
 
-ggplot(d1) + 
+ggplot(dall2) + 
   geom_line(aes(x = datetime, y = hensa)) +
   geom_line(aes(x = datetime, y = 0))
   
+dall2 |> 
+  mutate(ym = floor_date(date, "month")) |> 
+  ggplot() +
+  geom_histogram(aes(x = hensa),
+                 binwidth = 0.25)+
+  facet_wrap(vars(ym))
 
 
+dall2 |> 
+  mutate(ym = floor_date(date, "month")) |> 
+  group_by(ym) |> 
+  summarise(hensa_sd = sd(hensa)) |> 
+  ggplot() +
+  geom_col(aes(x = ym, y = hensa_sd))
 
 
+dall2 = dall |> 
+  select(datetime, mbar) |> 
+  mutate(date = floor_date(datetime, "7 days")) |> 
+  group_by(date) |> 
+  mutate(across(mbar,
+                   list(mean = mean,
+                        sd = sd))) |> 
+  mutate(mbar_normalized = (mbar - mbar_mean) / mbar_sd,
+         .before = mbar)
 
+ggplot(dall2) + 
+  geom_line(aes(x = datetime, y = mbar_normalized))
 
 
 
