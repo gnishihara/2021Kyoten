@@ -27,3 +27,62 @@ theme_pubr(base_size = 24, base_family = "notosans") |>
   theme_set()
 
 # theme_grey() # デフォルトの theme
+
+iris2 = iris |> as_tibble()
+
+iris2 = iris2 |> rename(sl = matches("pal.L"),
+                        sw = matches("pal.W"),
+                        pl = matches("tal.L"),
+                        pw = matches("tal.W"))
+
+iris2 |> group_by(Species) |> summarise(sl_mean = mean(sl))
+iris2 |> 
+  group_by(Species) |> 
+  summarise(across(.fns = mean))
+
+iris2 |> 
+  mutate(sl = ifelse(between(sl, 4, 5), NA, sl)) |> 
+  group_by(Species) |> 
+  summarise(across(.fns = mean, na.rm = TRUE))
+
+iris2 |> 
+  mutate(sl = ifelse(between(sl, 4, 5), NA, sl)) |> 
+  group_by(Species) |> 
+  summarise(across(.fns = ~mean(.x, na.rm = TRUE)))
+
+iris2 |> 
+  mutate(sl = ifelse(between(sl, 4, 5), NA, sl)) |> 
+  group_by(Species) |> 
+  summarise(across(.cols = c(sl, pl),
+                   .fns = mean, 
+                   na.rm = TRUE))
+
+iris2 |> 
+  mutate(sl = ifelse(between(sl, 4, 5), NA, sl)) |> 
+  group_by(Species) |> 
+  summarise(across(.cols = c(sl, pl),
+                   .fns = list("mean" = mean, "var" = var), 
+                   na.rm = TRUE))
+
+se = function(value, na.rm = FALSE) {
+  s = sd(value, na.rm)
+  nadata = is.na(value) |> sum()
+  n = length(value)
+  # print(n-nadata)
+  s / sqrt(n-nadata)
+}
+
+se2 = function(value, na.rm = FALSE) {
+  s = sd(value, na.rm)
+  n = length(value)
+  # print(n)
+  s / sqrt(n)
+}
+
+iris2 |> 
+  mutate(sl = ifelse(between(sl, 4, 5), NA, sl)) |> 
+  group_by(Species) |> 
+  summarise(across(.cols = c(sl, pl),
+                   .fns = list("stderr1" = se, 
+                               "stderr2" = se2), 
+                   na.rm = TRUE))
