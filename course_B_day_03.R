@@ -281,7 +281,7 @@ dset3 |>
 ################################
 # 複数グループの比較
 # 非線形モデルの決定家数の解説
-# ここから３日目午前の実習内容
+# ここからB日程３日目午前の実習内容
 library(tidyverse)
 library(nlstools)
 library(emmeans)
@@ -310,11 +310,8 @@ summary(m1)
 AIC(m1)
 AIC(m0,m1)
 
-Puromycin |> as_tibble()
 xdata = tibble(conc = seq(0, 1.1, by = 0.1)) 
-
 xdata2 = Puromycin |> distinct(state, conc)
-
 ydata = predict(m0, newdata = xdata)
 ydata2 = predict(m1, newdata = xdata2)
 xdata = xdata |> mutate(ydata)
