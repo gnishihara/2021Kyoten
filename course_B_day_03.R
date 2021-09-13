@@ -280,7 +280,12 @@ dset3 |>
 
 ################################
 # 複数グループの比較
+# 非線形モデルの決定家数の解説
 # 
+library(tidyverse)
+library(nlstools)
+library(emmeans)
+
 ggplot(Puromycin) + 
   geom_point(aes(x = conc, y = rate, color = state ),
              size = 5)
@@ -296,10 +301,11 @@ m0 = nls(rate ~ mmmodel(v,k,conc),
          start = list(v = 100, k = 0.1))
 summary(m0)
 
-m1 = nls(rate ~ mmmodel(v,k,conc) * (state == "treated"),
-         data = Puromycin, 
-         start = list(v = c(100,100), k = c(0.1, 0.1)))
+m1 = nls(rate ~ mmmodel(v[state], k[state] , conc),
+        data = Puromycin,
+        start = list(v = c(100,100), k = c(0.1, 0.1)))
 summary(m1)
+AIC(m1)
 AIC(m0,m1)
 
 Puromycin |> as_tibble()
@@ -318,6 +324,38 @@ ggplot(Puromycin) +
   geom_line(aes(x=conc, y = ydata), data = xdata)+
   geom_line(aes(x=conc, y = ydata2, color = state), data = xdata2)
 
+# 決定係数
+# R2 = 1 - unexplained variation / total variation
+# ∑(y - ybar)^2 = ∑(yhat - ybar)^2 + ∑(y - yhat)^2
+# Total variation = Explained variation + Unexplained variation
+
+x = c(1, 2, 3, 4, 5, 6)
+y = c(15, 37, 52, 59, 83, 92)
+r21 = function(y, yhat) {
+  rss = (y - yhat)^2
+  rst = (y - mean(y))^2
+  1 - sum(rss)/sum(rst)
+}
+r22 = function(y, yhat) {
+  numerator = (yhat - mean(y))^2
+  denominator = (y - mean(y))^2
+  sum(numerator)/sum(denominator)
+}
+r23 = function(y, yhat){ 
+  numerator = (yhat - mean(yhat))^2
+  denominator = (y - mean(y))^2
+  sum(numerator)/sum(denominator)
+}
+mout = lm(Sepal.Length ~ Petal.Length, data = iris)
+r21(iris$Sepal.Length, fitted(mout))
+r22(iris$Sepal.Length, fitted(mout))
+r23(iris$Sepal.Length, fitted(mout))
+
+mout = nls(y ~ a * x^b, start = list(a = 1, b = 1)) 
+mout
+r21(y, fitted(mout))
+r22(y, fitted(mout))
+r23(y, fitted(mout))
 
 # Non-linear models with a fixed effect ########################################
 library(nlme)
