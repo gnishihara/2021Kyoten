@@ -243,21 +243,30 @@ ggplot(maxrain) +
 
 # 一般化線形モデル
 # glm() ########################################################################
+# 正規分布を仮定したモデル
 m0gauss = glm(value ~ 1, data = maxrain, family = gaussian())
 m1gauss = glm(value ~ year, data = maxrain, family = gaussian())
 m2gauss = glm(value ~ year + location, data = maxrain, family = gaussian())
 m3gauss = glm(value ~ year * location, data = maxrain, family = gaussian())
 
+# ガンマ分布を仮定したモデル
 m0gamma = glm(value ~ 1, data = maxrain, family = Gamma("log"))
 m1gamma = glm(value ~ year, data = maxrain, family = Gamma("log"))
 m2gamma = glm(value ~ year + location, data = maxrain, family = Gamma("log"))
 m3gamma = glm(value ~ year * location, data = maxrain, family = Gamma("log"))
 
-m1 = glm(Petal.Length ~ Species, data = iris2, family = Gamma("log"))
-m2 = glm(Petal.Length ~ Species, data = iris2, family = gaussian)
-summary(m1)
+AIC(m0gauss, m1gauss, m2gauss, m3gauss,
+    m0gamma, m1gamma, m2gamma, m3gamma) |> 
+  as_tibble(rownames = "model") |> 
+  arrange(AIC)
 
 # diagnostic plots () ##########################################################
+
+maxrain = maxrain |> 
+  mutate(residN = residuals(m2gauss, type = "pearson"),
+         predN  = predict(m2gauss),
+         residG = residuals(m2gamma, type = "pearson"),
+         predG = predict(m2gamma))
 
 # qresiduals() #################################################################
 library(statmod)
