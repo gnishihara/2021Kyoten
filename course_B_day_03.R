@@ -2,7 +2,8 @@
 # 公開臨海実習
 # 水産海洋データ解析演習（B日程）
 # 非線形モデル
-# Good reference: Baty et al. 2015 Journal of Statistical Software 66: 1-21
+# Good reference: 
+# Baty et al. 2015 Journal of Statistical Software 66: 1-21
 
 # Workflow
 # 1) Prepare data
@@ -28,11 +29,11 @@ library(nlme)
 library(gnlm)
 
 # ggplot の設定 ################################################################
-font_add_google("Noto Sans", family = "notosans")
+# font_add_google("Noto Sans", family = "notosans")
 # font_add_google("Noto Serif", family = "notoserif")
 # font_add_google("Noto Sans JP", family = "notosanscjk")
 
-theme_pubr(base_size = 10, base_family = "notosans") |> theme_set()
+theme_pubr(base_size = 20) |> theme_set()
 
 # Download and read data #######################################################
 URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vThUTjrAocQvXqjtAeSeK7pWMQuRAGDSU8UpooB0Z6o51J6zvv0_Prcna0aDbJ-BfrCgpGshBhzUOKv/pub?output=csv"
@@ -67,9 +68,15 @@ dset2 = dset2 |>
   
 # Check the results ############################################################
 ggplot(dset2) + 
-  geom_point(aes(x = par, y = rate, color = as.factor(sample)))
+  geom_point(aes(x = par, y = rate, 
+                 color = as.factor(sample)))
 
 # Fit the three types of models ################################################
+# y1 = b0 + b1 * x
+# y2 = b0 + b1 * x + b2 * x^2
+# y3 = exp(b0 + b1 * x)
+# y4 = b2 * exp(b0 + b1 * x)
+
 model1 = function(b0, b1, b2, x) {
   b1 * x / (b2 + x) - b0
 }
