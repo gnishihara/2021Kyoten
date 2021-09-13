@@ -369,7 +369,7 @@ ggplot(maxrain) +
 # 切片の比較
 emmeans(m2gamma, specs = pairwise~location, var = "year")
 
-# glm の場合 df = Inf: 非漸近的信頼区間
+# glm の場合 df = Inf: 非漸近的信頼区間 (asymptotic interval)
 # m2gamma: value ~ location + year
 # 相互作用ないから year.trend はおなじ
 emtrends(m2gamma, 
