@@ -286,7 +286,9 @@ library(tidyverse)
 library(nlstools)
 library(emmeans)
 
-ggplot(Puromycin) + 
+Puromycin2 = Puromycin |> as_tibble()
+
+ggplot(Puromycin2) + 
   geom_point(aes(x = conc, y = rate, color = state ),
              size = 5)
 
