@@ -268,15 +268,50 @@ maxrain = maxrain |>
          residG = residuals(m2gamma, type = "pearson"),
          predG = predict(m2gamma))
 
+ggplot(maxrain) + 
+  geom_point(aes(x = predN, y = residN, color = location))
+
+ggplot(maxrain) + 
+  geom_point(aes(x = predG, y = residG, color = location))
+
+ggplot(maxrain) + 
+  geom_qq(aes(sample = residN, color = location)) + 
+  geom_qq_line(aes(sample = residN, color = location)) +
+  facet_wrap(vars(location))
+
+ggplot(maxrain) + 
+  geom_qq(aes(sample = residG, color = location)) + 
+  geom_qq_line(aes(sample = residG, color = location)) +
+  facet_wrap(vars(location))
+
+
 # qresiduals() #################################################################
+# Random quantile residuals
 library(statmod)
-iris2 = iris2 |> 
-  mutate(qres1 = qresiduals(m1),
-         fit1 = fitted(m1),
-         predict1 = predict.glm(m1, type = "link")) |> 
-  mutate(qres2 = qresiduals(m2),
-         fit2 = fitted(m2),
-         predict2 = predict.glm(m2, type = "link"))
+
+maxrain = maxrain |> 
+  mutate(residN = qresiduals(m2gauss),
+         predN  = predict(m2gauss),
+         residG = qresiduals(m2gamma),
+         predG = predict(m2gamma))
+
+ggplot(maxrain) + 
+  geom_point(aes(x = predN, y = residN, color = location))
+
+ggplot(maxrain) + 
+  geom_point(aes(x = predG, y = residG, color = location))
+
+ggplot(maxrain) + 
+  geom_qq(aes(sample = residN, color = location)) + 
+  geom_qq_line(aes(sample = residN, color = location)) +
+  facet_wrap(vars(location))
+
+ggplot(maxrain) + 
+  geom_qq(aes(sample = residG, color = location)) + 
+  geom_qq_line(aes(sample = residG, color = location)) +
+  facet_wrap(vars(location))
+
+
 
 ggplot(iris2) + geom_point(aes(x = fit, y = qres))
 p1 = ggplot(iris2) + geom_qq(aes(sample =  qres1)) + geom_qq_line(aes(sample = qres1))
