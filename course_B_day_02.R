@@ -16,12 +16,12 @@ library(emmeans) # 多重比較用パッケージ
 
 
 # ggplot の設定 ################################################################
-font_add_google("Noto Sans", family = "notosans")
+# font_add_google("Noto Sans", family = "notosans")
 # font_add_google("Noto Serif", family = "notoserif")
 # font_add_google("Noto Sans JP", family = "notosanscjk")
 
 # theme_pubr(base_size = 10, base_family = "notosans") |> theme_set()
-theme_pubr(base_size = 10) |> theme_set()
+theme_pubr(base_size = 20) |> theme_set()
 
 # 線形モデルの多重比較（一日目のつづき） #########################################################
 
@@ -65,22 +65,68 @@ temperature = weather |>
 temperature |> group_by(location) |> 
   summarise(across(value, list(mean = mean, sd = sd)))
 
-emmeans(m1, specs = pairwise ~ location, adjust = "tukey")
-emtrends(m1, specs = pairwise ~ location, var = "year", adjust = "tukey")
+# emmeans パッケージからの関数
+temperature = temperature |> mutate(year2 = year - 1875)
+
+m1 = lm(value ~ location, data = temperature)
+m2 = lm(value ~ year2*location, data = temperature) 
+m1 |> summary()
+m2 |> summary()
+
+emmeans(object = m1, 
+        specs = pairwise ~ location, 
+        adjust = "tukey") # TukeyHSD 法
+
+emmeans(object = m2, 
+        specs = pairwise ~ location, 
+        adjust = "tukey") # TukeyHSD 法
+
+# 切片のペアごと比較
+emmeans(object = m2, 
+        specs = pairwise ~ location, 
+        var = "year2",
+        adjust = "tukey") # TukeyHSD 法
+
+# 傾きのペアごとの比較
+emtrends(m2, specs = pairwise ~ location, 
+         var = "year2", adjust = "tukey")
+
 emmip(m1, ~location, CIs = TRUE)
-emmip(m1, location~year, cov.reduce = range)
+emmip(m2, location~year2, cov.reduce = range)
 
 ################################################################################
+library(nlme) # linear & non-linear mixed effects
 
-
-library(nlme)
 temperature = temperature |> drop_na() |> 
   mutate(location = factor(location))
 
-m1 = gls(value ~ year2 * location, data = temperature,
-         weights = varIdent(form=~1|location))
+ggplot(temperature) + 
+  geom_boxplot(aes(x = location, y = value))
 
-summary(m1) 
+# グループごとの分析が異なるとき
+# gls() generalized least squares 
+m1l = lm(value ~ year2 * location, data = temperature)
+m1ml = gls(value ~ year2 * location, 
+         data = temperature,
+         weights = varIdent(form = ~1|location),
+         method = "ML")
+m1reml = gls(value ~ year2 * location, 
+           data = temperature,
+           weights = varIdent(form = ~1|location))
+AIC(m1l, m1ml)
+m1l |> summary() 
+m1reml |> summary()
+
+temperature2 = temperature |> 
+  group_by(location, year) |> 
+  summarise(value = mean(value)) |> 
+  mutate(year2 = year - 1875)
+
+m1 = lm(value ~ year2 * location, data = temperature2)
+m1corCAR = gls(value ~ year2 * location, 
+             data = temperature2,
+             correlation = corCAR1(0.5, form = ~ year2 | location), 
+             weights = varIdent(form = ~1|location))
 
 # Variance for each location
 sigma = summary(m1)$sigma
