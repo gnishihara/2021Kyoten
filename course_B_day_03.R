@@ -128,9 +128,9 @@ plot(r2)
 test.nlsResiduals(r2)
 
 # Look at the contour/confidence region of the parameters ######################
-m2rss = nlsContourRSS(m2)
+# m2rss = nlsContourRSS(m2)
 m2cfr = nlsConfRegions(m2)
-plot(m2rss, bounds = TRUE)
+# plot(m2rss, bounds = TRUE)
 plot(m2cfr, bounds = TRUE)
 
 
@@ -147,7 +147,19 @@ plot(m2boot, type = "boxplot")
 # Plot the data and the fitted model ###########################################
 library(modelr)
 
+# モデル期待値の 95% 信頼区間をもとめるとき、
+# 係数間の相関をむししたらNG
 coefboot = m2boot$coefboot |> as_tibble()
+coefboot |> summarise(across(everything(),
+                             list(mean = mean,
+                                  sd = sd,
+                                  lower=~quantile(.x, 0.025),
+                                  upper=~quantile(.x, 0.975)))) |> 
+  pivot_longer(everything(), 
+               names_to = c("parameter", "statistic"),
+               names_pattern = "(.*)_(.*)") |> 
+  pivot_wider(names_from = statistic,
+              values_from = value)
 
 ndata = coefboot |> 
   mutate(par = list(seq(0, max(dset2$par), length = 21))) |> 
@@ -158,6 +170,50 @@ ndata = coefboot |>
                    list(mean = mean, sd = sd,
                         lower = ~quantile(.x, 0.025),
                         upper = ~quantile(.x, 0.975))))
+
+# ナイーブの係数と 95% 信頼区間
+summary(m2) |> str()
+cfs = summary(m2)$coefficients |>
+  as_tibble(rownames = "coefficient") |> 
+  select(!`t value`) |> 
+  select(!matches("Pr")) |> 
+  rename(se = `Std. Error`) |> 
+  mutate(lower = Estimate - 1.96*se,
+         upper = Estimate + 1.96*se) |> 
+  select(-se)
+
+PAR = seq(0, max(dset2$par), length = 21)
+cfsE = cfs$Estimate
+cfsL = cfs$lower
+cfsU = cfs$upper
+naive_cfs = tibble(par = PAR) |> 
+  mutate(pred = model2(cfsE[1],
+                       cfsE[2],
+                       cfsE[3], PAR)) |> 
+  mutate(lower = model2(cfsL[1],
+                       cfsL[2],
+                       cfsL[3], PAR)) |> 
+  mutate(upper = model2(cfsU[1],
+                       cfsU[2],
+                       cfsU[3], PAR))
+####
+ggplot(dset2)+
+  geom_point(aes(x = par, y = rate)) +
+  # geom_ribbon(aes(x = par, 
+  #                 ymin = rate_lower, 
+  #                 ymax = rate_upper, fill = "bootstrap"),
+  #             data = ndata, alpha = 0.8) +
+  geom_ribbon(aes(x = par, 
+                  ymin = lower, 
+                  ymax = upper, fill = "naive"),
+              data = naive_cfs, alpha = 0.8) +
+  # geom_line(aes(x = par, y = rate_mean, color = "bootstrap"),
+  #           data = ndata, size = 2) +
+  # geom_line(aes(x = par, y = pred, color = "naive"),
+  #           data = naive_cfs, size = 2) +
+  scale_color_viridis_d(end = 0.9) 
+
+ndata
 
 dset3 = dset2 |> 
   group_by(par) |> 
