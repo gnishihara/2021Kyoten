@@ -281,7 +281,7 @@ dset3 |>
 ################################
 # 複数グループの比較
 # 非線形モデルの決定家数の解説
-# 
+# ここから３日目午前の実習内容
 library(tidyverse)
 library(nlstools)
 library(emmeans)
