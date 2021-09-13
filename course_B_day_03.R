@@ -213,8 +213,6 @@ ggplot(dset2)+
   #           data = naive_cfs, size = 2) +
   scale_color_viridis_d(end = 0.9) 
 
-ndata
-
 dset3 = dset2 |> 
   group_by(par) |> 
   summarise(across(rate, list(mean = mean, sd = sd, n = length))) |> 
@@ -241,26 +239,43 @@ ggplot() +
 # This algorithm can improve the ability to fit a difficult model
 # nls() uses the Gauss-Newton algorithm as default
 library(minpack.lm)
+
 m2lm = nlsLM(rate ~ model2(b0, b1, b2, par), data = dset2, 
-             lower = c(0, 0,0), start = S)
+             lower = c(0, 0,0), start = S2)
 summary(m2lm)
 
 
-nlsList(rate ~ model2(b0, b1, b2, par) + 1|sample, 
-        data = dset2, start = S)
+ggplot(dset2) + 
+  geom_point(aes(x = par, y = rate)) +
+  facet_wrap("sample")
+
+# サンプルごとに非線形モデルをあてはめる方法
+# 
+# dset2 = dset2 |> mutate(sample = factor(sample))
+# 
+# nlsList(rate ~ model2(b0, b1, b2, par) + 1|sample, 
+#         data = dset2, start = S2)
 
 # Fit a model to each sample 
-
 fitmodel2 = function(z) {
   nls(rate ~ model2(b0, b1, b2, par), data = z, 
          start = c(b0 = 10, b1 = 30, b2 = 10)) 
 }
 
-dset2 |> 
+dset3 = dset2 |> 
   group_nest(sample) |> 
   mutate(model = map(data, fitmodel2)) |> 
   mutate(coefs = map(model, broom::tidy)) |> 
   unnest(coefs)
+
+ggplot(dset3) + 
+  geom_point(aes(x = term, y = estimate, color = sample),
+             position = position_jitter(0.1))
+dset3 |> 
+  group_by(term) |> 
+  summarise(across(estimate, 
+            list(mean = mean,
+                 sd = sd)))
 
 # Non-linear models with a fixed effect ########################################
 library(nlme)
