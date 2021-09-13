@@ -275,7 +275,49 @@ dset3 |>
   group_by(term) |> 
   summarise(across(estimate, 
             list(mean = mean,
-                 sd = sd)))
+                 sd = sd))) |> 
+  mutate(se = estimate_sd / sqrt(10))
+
+################################
+# 複数グループの比較
+# 
+ggplot(Puromycin) + 
+  geom_point(aes(x = conc, y = rate, color = state ),
+             size = 5)
+
+
+mmmodel = function(vmax,k,x) {
+  # Michaelis Menten model
+  vmax * x / (k + x)
+}
+
+m0 = nls(rate ~ mmmodel(v,k,conc),
+         data = Puromycin, 
+         start = list(v = 100, k = 0.1))
+summary(m0)
+
+m1 = nls(rate ~ mmmodel(v,k,conc) * (state == "treated"),
+         data = Puromycin, 
+         start = list(v = c(100,100), k = c(0.1, 0.1)))
+summary(m1)
+AIC(m0,m1)
+
+Puromycin |> as_tibble()
+xdata = tibble(conc = seq(0, 1.1, by = 0.1)) 
+
+xdata2 = Puromycin |> distinct(state, conc)
+
+ydata = predict(m0, newdata = xdata)
+ydata2 = predict(m1, newdata = xdata2)
+xdata = xdata |> mutate(ydata)
+xdata2 = xdata2 |> mutate(ydata2)
+
+ggplot(Puromycin) + 
+  geom_point(aes(x = conc, y = rate, color = state ),
+             size = 5) +
+  geom_line(aes(x=conc, y = ydata), data = xdata)+
+  geom_line(aes(x=conc, y = ydata2, color = state), data = xdata2)
+
 
 # Non-linear models with a fixed effect ########################################
 library(nlme)
