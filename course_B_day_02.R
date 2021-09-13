@@ -293,35 +293,79 @@ maxrain = maxrain |>
   mutate(residN = qresiduals(m2gauss),
          predN  = predict(m2gauss),
          residG = qresiduals(m2gamma),
-         predG = predict(m2gamma))
+         predG  = predict(m2gamma))
 
-ggplot(maxrain) + 
+p1 = ggplot(maxrain) + 
   geom_point(aes(x = predN, y = residN, color = location))
-
-ggplot(maxrain) + 
+p2 = ggplot(maxrain) + 
   geom_point(aes(x = predG, y = residG, color = location))
 
-ggplot(maxrain) + 
+ggarrange(p1,p2)
+
+p1 = ggplot(maxrain) + 
   geom_qq(aes(sample = residN, color = location)) + 
   geom_qq_line(aes(sample = residN, color = location)) +
   facet_wrap(vars(location))
 
-ggplot(maxrain) + 
+p2 = ggplot(maxrain) + 
   geom_qq(aes(sample = residG, color = location)) + 
   geom_qq_line(aes(sample = residG, color = location)) +
   facet_wrap(vars(location))
+ggarrange(p1,p2)
 
+# value ~ year + location
+# link = "log"
+# log(value) ~ year + location,
+# value ~ exp(year + location)
 
+m2gamma |> summary()
 
-ggplot(iris2) + geom_point(aes(x = fit, y = qres))
-p1 = ggplot(iris2) + geom_qq(aes(sample =  qres1)) + geom_qq_line(aes(sample = qres1))
-p2 = ggplot(iris2) + geom_qq(aes(sample =  qres2)) + geom_qq_line(aes(sample = qres2))
+ggplot(maxrain) + 
+  geom_point(aes(x = year, y = predG, color = location))
 
-ggpubr::ggarrange(p1,p2)
+ggplot(maxrain) + 
+  geom_point(aes(x = year, y = exp(predG), color = location))
 
+ggplot(maxrain) + 
+  geom_point(aes(x = year, y = value, color = location)) +
+  geom_line(aes(x = year, y = exp(predG), color = location)) +
+  geom_line(aes(x = year, y = predN, group = location)) +
+  ylim(50, 70)
 
- 
-################################################################################
+# 綺麗な図のつくりかた
+
+maxrain = maxrain |> 
+  mutate(seN = predict(m2gauss, se.fit = TRUE)$se.fit,
+         seG = predict(m2gamma, se.fit=TRUE)$se.fit) |> 
+  mutate(lowerN = predN - 1.96*seN,
+         upperN = predN + 1.96*seN,
+         lowerG = predG - 1.96*seG,
+         upperG = predG + 1.96*seG) |> 
+  mutate(across(c(lowerG, upperG), exp))
+  
+ggplot(maxrain) +
+  geom_point(aes(x = year, y = value, color = location)) +
+  geom_ribbon(aes(x = year, 
+                  ymin = lowerN,
+                  ymax = upperN,
+                  fill = location), alpha = 0.5) +
+  geom_line(aes(x = year, y = predN, color = location))
+
+ggplot(maxrain) +
+  geom_point(aes(x = year, y = value, color = location)) +
+  geom_ribbon(aes(x = year, 
+                  ymin = lowerG,
+                  ymax = upperG,
+                  fill = location), alpha = 0.5) +
+  geom_line(aes(x = year, y = exp(predG), color = location)) +
+  scale_x_continuous("Year") +
+  scale_y_continuous("Maxium rainfall (mm)") +
+  scale_color_viridis_d("", labels = ~str_to_sentence(.x),
+                        end = 0.9) +
+  scale_fill_viridis_d("", labels = ~str_to_sentence(.x),
+                       end = 0.9)
+
+  ################################################################################
 ################################################################################
 ################################################################################
 URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRH8_QwdlSReHgksJaWeRgHJ6J5ELx_7zyFRN7ZVdUHl87vkbZiV9bN42Mf3do8InyTufpQAWF1rKJC/pub?output=csv"
