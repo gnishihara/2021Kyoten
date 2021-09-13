@@ -16,11 +16,14 @@ library(emmeans) # 多重比較用パッケージ
 
 
 # ggplot の設定 ################################################################
-# font_add_google("Noto Sans", family = "notosans")
+library(showtext)
+font_add_google("Noto Sans", family = "notosans")
 # font_add_google("Noto Serif", family = "notoserif")
-# font_add_google("Noto Sans JP", family = "notosanscjk")
+font_add_google("Noto Sans JP", family = "nsanscjk")
+font_add_google("Noto Serif JP", family = "nserifcjk")
 
-# theme_pubr(base_size = 10, base_family = "notosans") |> theme_set()
+theme_pubr(base_size = 10, 
+           base_family = "notosans") |> theme_set()
 theme_pubr(base_size = 20) |> theme_set()
 
 # 線形モデルの多重比較（一日目のつづき） #########################################################
@@ -68,8 +71,20 @@ temperature |> group_by(location) |>
 # emmeans パッケージからの関数
 temperature = temperature |> mutate(year2 = year - 1875)
 
-m1 = lm(value ~ location, data = temperature)
-m2 = lm(value ~ year2*location, data = temperature) 
+m0 = lm(value ~ 1, data = temperature) # 帰無モデル
+m1a = lm(value ~ location, data = temperature)
+m1b = lm(value ~ year2, data = temperature)
+m2 = lm(value ~ year2 + location, data = temperature)
+m3 = lm(value ~ year2 * location, data = temperature) # フルモデル
+
+anova(m0, m1a, m2, m3, test = "F")
+anova(m0, m1b, m2, m3, test = "F")
+anova(m0, m3, test = "F")
+
+# The full model compared to the null model had a F-value of 
+# 195 with 5 and 1249 degrees-of-freedom and was 
+# statistically significant with a Pvalue of < 0.0001.
+
 m1 |> summary()
 m2 |> summary()
 
@@ -113,6 +128,7 @@ m1ml = gls(value ~ year2 * location,
 m1reml = gls(value ~ year2 * location, 
            data = temperature,
            weights = varIdent(form = ~1|location))
+
 AIC(m1l, m1ml)
 m1l |> summary() 
 m1reml |> summary()
@@ -127,57 +143,84 @@ m1corCAR = gls(value ~ year2 * location,
              data = temperature2,
              correlation = corCAR1(0.5, form = ~ year2 | location), 
              weights = varIdent(form = ~1|location))
+m1varIdent = gls(value ~ year2 * location, 
+               data = temperature2,
+               weights = varIdent(form = ~1|location))
+m1corCARml = gls(value ~ year2 * location, 
+             data = temperature2,
+             correlation = corCAR1(0.5, form = ~ year2 | location), 
+             weights = varIdent(form = ~1|location),
+             method = "ML")
+m1varIdentml = gls(value ~ year2 * location, 
+               data = temperature2,
+               weights = varIdent(form = ~1|location),
+               method = "ML")
+AIC(m1, m1corCARml, m1varIdentml)
 
-# Variance for each location
-sigma = summary(m1)$sigma
+temperature2 = temperature2 |> ungroup() |> 
+  mutate(resid = residuals(m1corCAR, type = "pearson")) |> 
+  mutate(pred = predict(m1corCAR)) |> 
+  mutate(residC = residuals(m1corCAR, type = "pearson")) |> 
+  mutate(predC = predict(m1corCAR)) |> 
+  mutate(residI = residuals(m1varIdent, type = "pearson")) |> 
+  mutate(predI = predict(m1varIdent))
 
-tokyoS = intervals(m1, which = "var-cov") |> pluck("sigma") |> as_tibble_row() |> 
-  mutate(location = "tokyo")
-S = intervals(m1, which = "var-cov") |> pluck("varStruct") |> 
-  tidyr::as_tibble(rownames = "location")
+# bartlett.test(resid ~ location, data = temperature)
+# fligner.test(resid ~ location, data = temperature)
 
-bind_rows(tokyoS,S) |> 
-  mutate(sigma = c(1,sigma, sigma)) |> 
-  mutate(across(c(lower, `est.`, upper),
-                ~.*sigma))
+ggplot(temperature2) + 
+  geom_boxplot(aes(x = location, 
+                   y = resid))
 
-plot(m1)
-
-temperature = temperature |> mutate(resid = residuals(m1)) |> 
-  mutate(pred = predict(m1))
-
-temperature |> 
-  group_nest(location) |> 
-  mutate(shapiro = map(data, \(x){
-    shapiro.test(x$resid)
-  })) |> 
-  mutate(tidy = map(shapiro, tidy)) |> 
-  unnest(tidy)
-
-bartlett.test(resid ~ location, data = temperature)
-fligner.test(resid ~ location, data = temperature)
-
-ggplot(temperature) + geom_boxplot(aes(x = location, y = resid))
-
-ggplot(temperature) + 
+p0 = ggplot(temperature2) + 
   geom_point(aes(x = pred, y = resid, color = location)) +
   geom_smooth(aes(x = pred, y = resid, color = location)) + 
   facet_wrap(vars(location), nrow = 3)
 
-ggplot(temperature) + 
+p1 = ggplot(temperature2) + 
+  geom_point(aes(x = predC, y = residC, color = location)) +
+  geom_smooth(aes(x = predC, y = residC, color = location)) + 
+  facet_wrap(vars(location), nrow = 3)
+
+p2 = ggplot(temperature2) + 
+  geom_point(aes(x = predI, y = residI, color = location)) +
+  geom_smooth(aes(x = predI, y = residI, color = location)) + 
+  facet_wrap(vars(location), nrow = 3)
+ggarrange(p0, p1,p2)
+
+p0 = ggplot(temperature2) + 
   geom_qq(aes(sample = resid, color = location)) +
   geom_qq_line(aes(sample = resid, color = location)) +
   facet_wrap(vars(location), ncol = 3)
+
+p1 = ggplot(temperature2) + 
+  geom_qq(aes(sample = residC, color = location)) +
+  geom_qq_line(aes(sample = residC, color = location)) +
+  facet_wrap(vars(location), ncol = 3)
+
+p2 = ggplot(temperature2) + 
+  geom_qq(aes(sample = residI, color = location)) +
+  geom_qq_line(aes(sample = residI, color = location)) +
+  facet_wrap(vars(location), ncol = 3)
+
+ggarrange(p0, p1,p2)
 
 ggplot(temperature) + 
   geom_point(aes(x = year, y = value, color = location)) +
   geom_line(aes(x = year, y = pred, color = location)) +
   facet_wrap(vars(location), nrow = 3)
 
+# AIC, QQplot, 残渣の変動を確認したら、
+# m1corCAR がベストモデル
 
-emmeans(m1, specs = pairwise ~ location, adjust = "tukey")
+AIC(m1, m1corCARml, m1varIdentml)
 
-emtrends(m1, specs = pairwise ~ location, var = "year", adjust = "tukey",
+emmeans(m1corCAR, 
+        specs = pairwise ~ location, adjust = "tukey")
+
+emtrends(m1corCAR, 
+         specs = pairwise ~ location, 
+         var = "year2", adjust = "tukey",
          mode = "df.error")
 
 emmip(m1, ~location, CIs = TRUE)
