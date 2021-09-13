@@ -243,7 +243,16 @@ ggplot(maxrain) +
 
 # 一般化線形モデル
 # glm() ########################################################################
-iris2 = iris |> as_tibble()
+m0gauss = glm(value ~ 1, data = maxrain, family = gaussian())
+m1gauss = glm(value ~ year, data = maxrain, family = gaussian())
+m2gauss = glm(value ~ year + location, data = maxrain, family = gaussian())
+m3gauss = glm(value ~ year * location, data = maxrain, family = gaussian())
+
+m0gamma = glm(value ~ 1, data = maxrain, family = Gamma("log"))
+m1gamma = glm(value ~ year, data = maxrain, family = Gamma("log"))
+m2gamma = glm(value ~ year + location, data = maxrain, family = Gamma("log"))
+m3gamma = glm(value ~ year * location, data = maxrain, family = Gamma("log"))
+
 m1 = glm(Petal.Length ~ Species, data = iris2, family = Gamma("log"))
 m2 = glm(Petal.Length ~ Species, data = iris2, family = gaussian)
 summary(m1)
