@@ -366,10 +366,57 @@ ggplot(maxrain) +
                        end = 0.9)
 
 ## emmeans
+# 切片の比較
+emmeans(m2gamma, specs = pairwise~location, var = "year")
 
-
+# glm の場合 df = Inf: 非漸近的信頼区間
+# m2gamma: value ~ location + year
+# 相互作用ないから year.trend はおなじ
 emtrends(m2gamma, 
          specs = pairwise ~ location, 
          var = "year")
 
-         
+
+# 予測区間と信頼区間の違い
+
+m2gamma |> str()
+m2gamma |> summary()
+dispersion = summary(m2gamma)$dispersion
+
+maxrain = maxrain |> 
+  mutate(seN = predict(m2gauss, se.fit = TRUE)$se.fit,
+         seG = predict(m2gamma, se.fit=TRUE)$se.fit) |> 
+  mutate(lowerN = predN - 1.96*seN,
+         upperN = predN + 1.96*seN,
+         lowerG = predG - 1.96*seG,
+         upperG = predG + 1.96*seG) |> 
+  mutate(across(c(lowerG, upperG), exp))
+
+library(ciTools) # 予測区間の推定に使うパッケージ
+
+pmaxrain = maxrain |> select(value, location, year)
+emaxrain = add_ci(pmaxrain, m2gamma) |> as_tibble()
+pmaxrain = add_pi(pmaxrain, m2gamma) |> as_tibble()
+
+ggplot() +
+  geom_point(aes(x = year, y = value, color = location),
+             data = maxrain) +
+  geom_ribbon(aes(x = year, 
+                  ymin = LPB0.025,
+                  ymax = UPB0.975,
+                  fill = location), alpha = 0.5,
+              data = pmaxrain) +
+  geom_line(aes(x = year, y = pred, color = location),
+            data = pmaxrain) +
+  geom_ribbon(aes(x = year, 
+                  ymin = LCB0.025,
+                  ymax = UCB0.975,
+                  fill = location), alpha = 0.5,
+              data = emaxrain) +
+  scale_x_continuous("Year") +
+  scale_y_continuous("Maxium rainfall (mm)") +
+  scale_color_viridis_d("", labels = ~str_to_sentence(.x),
+                        end = 0.9) +
+  scale_fill_viridis_d("", labels = ~str_to_sentence(.x),
+                       end = 0.9) +
+  facet_grid(cols = vars(location))
