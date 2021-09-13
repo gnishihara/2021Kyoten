@@ -37,6 +37,14 @@ HOBO H21-002 Microstation Data @ ECSER
 
 ## Some papers for reference
 
-Wasserman RL, Lazar NA (2016) “The ASA’s Statement on p-Values: Context, Process, and Purpose,” The American Statistician, 70, 129–133, https://doi.org/10.1080/00031305.2016.1154108
 
-Wasserman RL, Schirm AL, Lazar, NA (2019) “Moving to a World Beyond ‘p < 0.05’,” The American Statistician, 73, 1–19, https://doi.org/10.1080/00031305.2019.1583913
+**P値について**
+Wasserman RL, Lazar NA. (2016) The ASA’s Statement on p-Values: Context, Process, and Purpose. The American Statistician 70: 129–133. (https://doi.org/10.1080/00031305.2016.1154108)
+
+Wasserman RL, Schirm AL, Lazar, NA. (2019) Moving to a World Beyond 'p < 0.05'. The American Statistician 73: 1–19. (https://doi.org/10.1080/00031305.2019.1583913)
+
+**非線形モデルの決定係数について**
+
+Kvalseth TO. (1983) Note on the R2 measure of goodness of fit for nonlinear models. Bulletin of the Psychonomic Society 21: 79-80. (https://link.springer.com/article/10.3758/BF03329960)
+Spiess, AN, Neumeyer, N. (2010) An evaluation of R2 as an inadequate measure for nonlinear models in pharmacological and biochemical research: a Monte Carlo approach. BMC Pharmacol 10: 6. (https://doi.org/10.1186/1471-2210-10-6)
+
