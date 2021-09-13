@@ -75,7 +75,12 @@ ggplot(dset2) +
 # y1 = b0 + b1 * x
 # y2 = b0 + b1 * x + b2 * x^2
 # y3 = exp(b0 + b1 * x)
+#  dy3/db0 = exp(b0 + b1 * x)
+#  dy3/db1 = x*exp(b0 + b1 * x)
 # y4 = b2 * exp(b0 + b1 * x)
+#   dy4/db0 = b2 * exp(b0 + b1 * x)
+#   dy4/db1 = b2 * x * exp(b0 + b1 * x)
+#   dy4/db2 = exp(b0 + b1 * x)
 
 model1 = function(b0, b1, b2, x) {
   b1 * x / (b2 + x) - b0
@@ -90,14 +95,20 @@ model3 = function(b0, b1, b2, x) {
 }
 
 # Use nlstools to find good starting values ####################################
-S = list(b0 = 10, b1 = 30, b2 = 10)
+S = list(b0 = 10, b1 = 30, b2 = 20)
 preview(rate ~ model1(b0,b1,b2,par), data = dset2,
         start = S, variable = 2)
+S2 = list(b0 = 10, b1 = 50, b2 = 1)
+preview(rate ~ model2(b0,b1,b2,par), data = dset2,
+        start = S2, variable = 2)
 
+S3 = list(b0 = 1, b1 = 10, b2 = 0.5)
+preview(rate ~ model3(b0,b1,b2,par), data = dset2,
+        start = S3, variable = 2)
 # Fit the model ################################################################
 m1 = nls(rate ~ model1(b0, b1, b2, par), data = dset2, start = S)
-m2 = nls(rate ~ model2(b0, b1, b2, par), data = dset2, start = S)
-m3 = nls(rate ~ model3(b0, b1, b2, par), data = dset2, start = S)
+m2 = nls(rate ~ model2(b0, b1, b2, par), data = dset2, start = S2)
+m3 = nls(rate ~ model3(b0, b1, b2, par), data = dset2, start = S3)
 
 # Pick the model ###############################################################
 AIC(m1,m2,m3)
