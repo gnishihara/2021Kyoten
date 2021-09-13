@@ -365,4 +365,11 @@ ggplot(maxrain) +
   scale_fill_viridis_d("", labels = ~str_to_sentence(.x),
                        end = 0.9)
 
-  
+## emmeans
+
+
+emtrends(m2gamma, 
+         specs = pairwise ~ location, 
+         var = "year")
+
+         
