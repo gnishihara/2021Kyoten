@@ -227,24 +227,21 @@ emmip(m1, ~location, CIs = TRUE)
 emmip(m1, location~year, cov.reduce = range)
 
 
-
-
 ################################################################################
 ################################################################################
+maxrain = weather |> 
+  filter(str_detect(measurement, "^max-rainfall"))
+maxrain = maxrain |> drop_na()
+maxrain = maxrain |> 
+  group_by(year, location) |> 
+  summarise(value = mean(value)) |> 
+  ungroup()
 
+ggplot(maxrain) + 
+  geom_point(aes(x = year, y = value, color = location)) +
+  facet_grid(cols = vars(location))
 
-
-
-
-
-
-
-
-
-
-
-
-
+# 一般化線形モデル
 # glm() ########################################################################
 iris2 = iris |> as_tibble()
 m1 = glm(Petal.Length ~ Species, data = iris2, family = Gamma("log"))
