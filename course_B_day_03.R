@@ -526,6 +526,13 @@ m2 = gam(rate ~ s(conc, k = 5, by = "state") + state,
          data = Puromycin2)
 summary(m1)
 summary(m2)
+AIC(m1,m2)
+
+ggplot(Puromycin2) +
+  geom_point(aes(x = conc, y = rate, color = state)) +
+  geom_smooth(aes(x = conc, y = rate, color = state),
+              method = "gam",
+              formula = y~s(x, k = 2))
 
 ##############
 library(corrr)
