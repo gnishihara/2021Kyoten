@@ -493,46 +493,29 @@ AIC(mnull) # AICの上限
 
 # Non-linear models with a fixed effect ########################################
 library(nlme)
-dset2 = dset2 |> mutate(sample = factor(sample))
+Puromycin2 = Puromycin |> as_tibble()
 
-S2 = list(b0 = rep(10, 10),
-          b1 = rep(30, 10),
-          b2 = rep(10, 10))
-m2g = gnls(rate ~ model2(b0, b1, b2, par), 
-           data = dset2, b0+b1+b2 ~ sample,
-           start = S2)
-summary(m2g)
-m2g = gnls(rate ~ model2(b0, b1, b2, par), 
-           data = dset2, b0+b1+b2 ~ 0+sample,
-     start = S2)
-AIC(m2)
-AIC(m2g)
-summary(m2g)
-m2r = residuals(m2g)
+ggplot(Puromycin2) + 
+  geom_point(aes(x = conc, y = rate, color = state ),
+             size = 5)
 
-coefficients(m2g) |> as_tibble_col() |> 
-  mutate(param = names(coefficients(m2g))) |> 
-  separate(param, c("parameter", "sample")) |> 
-  group_by(parameter) |> 
-  summarise(m = mean(value),
-            s = sd(value),
-            n = length(value)) |> 
-  mutate(se = s / sqrt(n))
-summary(m2)
+mm_model = function(vmax,k,x) {
+  # Michaelis Menten model
+  vmax * x / (k + x)
+}
 
-dset2 = dset2 |> ungroup() |> mutate(resid = m2r) |> 
-  mutate(nresid = resid / m2g$sigma) |> 
-  mutate(sqresid = sqrt(abs(nresid)),
-         fit = fitted(m2g))
+S = list(vmax = c(200,200),
+         k = c(0.1, 0.1))
 
-ggplot(dset2) + geom_point(aes(x = fit, y = sqresid))
+mgnls = gnls(rate ~ mm_model(vmax, k, conc), 
+           data = Puromycin2, 
+           vmax + k ~ state,
+           start = S)
+
+mgnlsk = gnls(rate ~ mm_model(vmax, k, conc), 
+             data = Puromycin2, 
+             list(vmax ~ state, k ~ 1),
+             start = list(vmax = c(200,200),
+                          k = 0.1))
 
 
-m2g = nlme(rate ~ model2(b0, b1, b2, par), 
-           data = dset2, 
-           fixed = b0+b1+b2 ~ 1,
-           random = b0+b1+b2 ~ 1,
-           start = coefficients(m2), 
-           control = list(msMaxIter = 10000))
-summary(m2g)
-coef(m2g) |> as_tibble(rownames = "sample")
