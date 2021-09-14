@@ -518,4 +518,30 @@ mgnlsk = gnls(rate ~ mm_model(vmax, k, conc),
              start = list(vmax = c(200,200),
                           k = 0.1))
 
+#########################################################
+
+library(mgcv)
+m1 = gam(rate ~ s(conc, k = 5), data = Puromycin2)
+m2 = gam(rate ~ s(conc, k = 5, by = "state") + state,
+         data = Puromycin2)
+summary(m1)
+summary(m2)
+
+##############
+library(corrr)
+iris |> as_tibble() |> 
+  select(!Species) |> 
+  correlate()
+
+
+iris |> as_tibble() |> 
+  group_nest(Species) |> 
+  mutate(dr = map(data, correlate)) |> 
+  select(dr) |> 
+  unnest(dr)
+  
+iris |> as_tibble() |> 
+  select(!Species) |> 
+  correlate() |> 
+  rplot(print_cor=T)
 
