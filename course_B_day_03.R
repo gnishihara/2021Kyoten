@@ -292,36 +292,153 @@ ggplot(Puromycin2) +
   geom_point(aes(x = conc, y = rate, color = state ),
              size = 5)
 
-
-mmmodel = function(vmax,k,x) {
+mm_model = function(vmax,k,x) {
   # Michaelis Menten model
   vmax * x / (k + x)
 }
 
-m0 = nls(rate ~ mmmodel(v,k,conc),
+S = list(v = 200, k = 0.10)
+preview(rate ~ mm_model(v, k, conc),
+        data = Puromycin2,
+        variable = 1,
+        start = S)
+# pooled model.
+m0 = nls(rate ~ mm_model(v,k,conc),
          data = Puromycin, 
-         start = list(v = 100, k = 0.1))
+         start = S)
 summary(m0)
 
-m1 = nls(rate ~ mmmodel(v[state], k[state] , conc),
-        data = Puromycin,
-        start = list(v = c(100,100), k = c(0.1, 0.1)))
-summary(m1)
-AIC(m1)
-AIC(m0,m1)
+pdata = Puromycin2 |> distinct(conc, state)
+pdata = pdata |> mutate(yhat = predict(m0, newdata = pdata))
 
-xdata = tibble(conc = seq(0, 1.1, by = 0.1)) 
-xdata2 = Puromycin |> distinct(state, conc)
-ydata = predict(m0, newdata = xdata)
-ydata2 = predict(m1, newdata = xdata2)
-xdata = xdata |> mutate(ydata)
-xdata2 = xdata2 |> mutate(ydata2)
-
-ggplot(Puromycin) + 
+# pooled model
+ggplot(Puromycin2) + 
   geom_point(aes(x = conc, y = rate, color = state ),
              size = 5) +
-  geom_line(aes(x=conc, y = ydata), data = xdata)+
-  geom_line(aes(x=conc, y = ydata2, color = state), data = xdata2)
+  geom_line(aes(x = conc, y = yhat, color = state),
+            data = pdata) +
+  facet_wrap("state")
+
+
+# full model.
+cfs0 = coefficients(m0)
+S = list(v = rep(cfs0[1], 2),
+         k = rep(cfs0[2], 2))
+
+m3 = nls(rate ~ mm_model(v[state], k[state],conc),
+         data = Puromycin2, 
+         start = S)
+summary(m3)
+
+pdata3 = Puromycin2 |> distinct(conc, state)
+pdata3 = pdata3 |> mutate(yhat = predict(m3, newdata = pdata3))
+
+# pooled and full model
+ggplot(Puromycin2) + 
+  geom_point(aes(x = conc, y = rate), size = 5) +
+  geom_line(aes(x = conc, y = yhat, color = "pooled"),
+            data = pdata) +
+  geom_line(aes(x = conc, y = yhat, color = "full"),
+            data = pdata3) +
+  facet_wrap("state")
+
+# v-state model, k-state model
+S = list(v = cfs0[1],
+         k = rep(cfs0[2], 2))
+mv = nls(rate ~ mm_model(v, k[state],conc),
+         data = Puromycin2, 
+         start = S)
+S = list(v = rep(cfs0[1], 2),
+         k = cfs0[2])
+mk= nls(rate ~ mm_model(v[state], k,conc),
+         data = Puromycin2, 
+         start = S)
+
+broom::tidy(m0)
+broom::tidy(mk)
+broom::tidy(mv)
+broom::tidy(m3)
+
+# モデル選択
+AIC(m0, mk, mv, m3) |> 
+  as_tibble(rownames = "model") |> 
+  arrange(AIC) |> 
+  mutate(dAIC = AIC - lag(AIC))
+
+# mk の期待値
+pdatak = Puromycin2 |> distinct(conc, state)
+pdatak = pdatak |> mutate(yhat = predict(mk, newdata = pdatak))
+
+# pooled, full, mk model
+ggplot(Puromycin2) + 
+  geom_point(aes(x = conc, y = rate), size = 5) +
+  geom_line(aes(x = conc, y = yhat, color = "pooled"),
+            data = pdata) +
+  geom_line(aes(x = conc, y = yhat, color = "full"),
+            data = pdata3) +
+  geom_line(aes(x = conc, y = yhat, color = "mk"),
+            data = pdatak) +
+  facet_wrap("state")
+
+# 残渣確認
+
+Puromycin2 = Puromycin2 |> 
+  mutate(yhat0 = fitted(m0),
+         yhat3 = fitted(m3),
+         yhatk = fitted(mk),
+         yres0 = residuals(m0),
+         yres3 = residuals(m3),
+         yresk = residuals(mk))
+
+# qqplot
+Puromycin3 = Puromycin2 |> 
+  pivot_longer(cols = matches("(yhat)|(yres)"),
+               names_to = c(".value", "model"),
+               names_pattern = "(y[a-z]{3})(.)")
+
+library(ggpubr)
+theme_pubr(base_size = 20) |> theme_set()
+
+ggplot(Puromycin3) + 
+  geom_qq(aes(sample = yres, color = model)) + 
+  geom_qq_line(aes(sample = yres, color = model))  +
+  facet_wrap("model")
+
+
+Puromycin3 = Puromycin3 |> 
+  mutate(yresstd = sqrt(abs(yres / sd(yres))))
+
+ggplot(Puromycin3) +
+  geom_point(aes(x = yhat, 
+                 y = yres, 
+                 color = model), size = 3) +
+  # geom_smooth(aes(x = yhat, y = yres, color = model)) +
+  geom_hline(yintercept = 0, linetype = "dashed", size = 3) +
+  facet_wrap("model")
+
+ggplot(Puromycin3) +
+  geom_point(aes(x = yhat, 
+                 y = yresstd, 
+                 color = model), size = 3) +
+  geom_smooth(aes(x = yhat, y = yresstd, color = model)) +
+  facet_wrap("model")
+
+
+ggplot(Puromycin3) +
+  geom_point(aes(x = yhat, 
+                 y = yresstd, 
+                 color = state), size = 3) +
+  geom_smooth(aes(x = yhat, y = yresstd, color = state),
+              se = FALSE) +
+  facet_wrap("model")
+
+mk |> summary()
+
+# emmeans(mk, specs = pairwise ~ state) # モデルの工夫が必要
+
+# 複数の係数があるとできない。
+# mkcfr = nlsConfRegions(mk)
+
 
 # 決定係数
 # R2 = 1 - unexplained variation / total variation
@@ -330,6 +447,12 @@ ggplot(Puromycin) +
 
 x = c(1, 2, 3, 4, 5, 6)
 y = c(15, 37, 52, 59, 83, 92)
+
+ggplot() + 
+  geom_point(aes(x = x, y = y), size = 3) +
+  geom_line(aes(x = x, y = fitted(mout)), color = "red") +
+  geom_hline(yintercept = mean(y))
+
 r21 = function(y, yhat) {
   rss = (y - yhat)^2
   rst = (y - mean(y))^2
@@ -345,16 +468,28 @@ r23 = function(y, yhat){
   denominator = (y - mean(y))^2
   sum(numerator)/sum(denominator)
 }
+
 mout = lm(Sepal.Length ~ Petal.Length, data = iris)
 r21(iris$Sepal.Length, fitted(mout))
 r22(iris$Sepal.Length, fitted(mout))
 r23(iris$Sepal.Length, fitted(mout))
 
+# y = a * x ^b
+# 決定係数 (coefficient of determination)
+# 当てはめの良さ (goodness-of-fit)は決定係数で表現できない
+# 
 mout = nls(y ~ a * x^b, start = list(a = 1, b = 1)) 
-mout
+mout |> summary()
 r21(y, fitted(mout))
 r22(y, fitted(mout))
 r23(y, fitted(mout))
+
+mnull = lm(y~1)
+mline = lm(y~x)
+
+AIC(mnull) # AICの上限
+(AIC(mnull) - AIC(mout)) / AIC(mnull) 
+(AIC(mnull) - AIC(mline)) / AIC(mnull) 
 
 # Non-linear models with a fixed effect ########################################
 library(nlme)
@@ -363,10 +498,12 @@ dset2 = dset2 |> mutate(sample = factor(sample))
 S2 = list(b0 = rep(10, 10),
           b1 = rep(30, 10),
           b2 = rep(10, 10))
-m2g = gnls(rate ~ model2(b0, b1, b2, par), data = dset2, b0+b1+b2 ~ sample,
+m2g = gnls(rate ~ model2(b0, b1, b2, par), 
+           data = dset2, b0+b1+b2 ~ sample,
            start = S2)
 summary(m2g)
-m2g = gnls(rate ~ model2(b0, b1, b2, par), data = dset2, b0+b1+b2 ~ 0+sample,
+m2g = gnls(rate ~ model2(b0, b1, b2, par), 
+           data = dset2, b0+b1+b2 ~ 0+sample,
      start = S2)
 AIC(m2)
 AIC(m2g)
